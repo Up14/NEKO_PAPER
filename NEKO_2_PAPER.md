@@ -294,22 +294,28 @@ The four-tier query strategy retrieves articles by capturing papers that use dif
 
 **[Figure 4: TODO: SCREENSHOT -- (a) Open NEKO's `filterd_entity_carotene_network.html` (421 nodes, 431 edges, undirected, unlabeled). (b) Open NEKO 2.0's knowledge graph from `/api/goals/306f70a7.../graph` (2,996 entities, 4,722 triples, directed, typed). Screenshot both.]**
 
-For the beta-carotene case study, we compared extraction results from the original NEKO (Yarrowia PDF processing with Qwen1.5-14B, ~233 PDFs) against NEKO 2.0 (PubMed abstracts, 226 articles):
+We compared extraction results from the original NEKO (Yarrowia PDF processing with Qwen1.5-14B, 234 PDFs containing full paper text) against NEKO 2.0 (PubMed abstracts only, 226 articles on beta-carotene production).
 
-| Metric | NEKO | NEKO 2.0 | Change |
+**Important note on comparison fairness:** The original NEKO processed full PDF text (~1000-word chunks per page), giving it access to far more text per paper than NEKO 2.0, which processes only abstracts (~200-300 words each). This means raw quantity comparisons favor the original NEKO. The key improvements of NEKO 2.0 are in extraction *quality* (typed relations, structured metrics, confidence scoring), not raw volume.
+
+| Metric | NEKO (234 full PDFs) | NEKO 2.0 (226 abstracts) | Key Difference |
 |---|---|---|---|
-| Extraction format | (Entity A, Entity B) | (Subject, Relation, Object) | Typed |
-| Relationship types captured | 1 (untyped) | 525 raw, normalized to 13 canonical | +12 ontology types |
-| Extraction passes per abstract | 1 | 3 + validation | +3 passes |
-| Total relationships extracted | 431 edges | 4,722 triples | **11x more** |
-| Relationships per article (average) | ~1.9 pairs/article | ~20.9 triples/article | **11x more** |
-| Unique entities extracted | 421 nodes | 2,996 entities | **7.1x more** |
-| has_metric triples (quantitative data) | 0 (embedded in entity names) | 598 (12.7% of all triples) | **New capability** |
-| Articles with stability score > 0.5 | N/A | 54.4% (123 of 226) | Majority are high-confidence |
+| Input text per article | Full paper (~5,000-10,000 words) | Abstract only (~200-300 words) | NEKO had ~20x more text |
+| Extraction format | Untyped pairs: (Entity A, Entity B) | Typed triples: (Subject, Relation, Object) | **Semantic structure** |
+| Total relationships | 40,357 untyped pairs | 4,722 typed triples | NEKO had more raw text |
+| Unique entities | 43,630 (high noise) | 2,996 (normalized) | **Less noise after normalization** |
+| Relationship types | 1 (all untyped) | 525 raw, normalized to 13 canonical | **13 mechanistic types** |
+| Gene names identified | 2,261 | 100 | NEKO had full-text gene sections |
+| Engineering strategies | 1,039 | 33 | NEKO had full methods sections |
+| Quantitative metrics | 531 (embedded in entity names) | 202 (structured has_metric triples) | **Metrics are structured, not embedded** |
+| Confidence scoring | None | Jaccard stability score per article | **New capability** |
+| Stability > 0.5 | N/A | 54.4% (123 of 226) | Majority are high-confidence |
 
-**[Figure 5: TODO: CREATE HISTOGRAM -- Stability scores show a bimodal distribution: 103 articles (45.6%) scored near 0.0 and 123 articles (54.4%) scored near 1.0, with very few in between. This suggests that the extraction-validation agreement is either very low or very high per article, not gradual. Plot from "Stability Score Q2" column.]**
+**[Figure 5: TODO: CREATE HISTOGRAM -- Stability scores are strongly bimodal: 103 articles (45.6%) scored exactly 0.0 and 123 articles (54.4%) scored exactly 1.0, with only 8 articles in between. Plot from "Stability Score Q2" column.]**
 
-The 11x increase in extracted relationships per article is primarily driven by the multi-pass extraction (3 passes + validation) and the typed triple format, which captures more specific relationships that untyped pairs would merge. [TODO: To measure per-pass contribution specifically, add logging to `ask_llm_with_fallback` in Minning.py to track |pass1_triples|, |pass2_new|, |pass3_new| counts.]
+The critical quality difference is visible in entity cleanliness. The original NEKO's 43,630 entities contain substantial noise because untyped pairs mix entities with their measurements (e.g., "'0.56 g/L/h'" appears as an entity). NEKO 2.0's 2,996 entities are cleaner because the `has_metric` relation separates numeric values into dedicated triples, and the relation ontology prevents measurements from being treated as entities.
+
+[TODO: To measure per-pass contribution specifically, add logging to `ask_llm_with_fallback` in Minning.py to track |pass1_triples|, |pass2_new|, |pass3_new| counts and re-run on a sample of 20-30 articles.]
 
 ### 6.3 Relation Type Distribution
 
@@ -362,9 +368,9 @@ Note: The relation normalization results are confirmed from the actual run: 525 
 | Multiple edges between same nodes | Not possible | Supported |
 | Causal direction preserved | No | Yes |
 | Edge provenance (PMID) | No | Yes |
-| Total nodes | 421 | 2,996 | **7.1x more** |
-| Total edges | 431 | 4,722 | **11x more** |
-| Average node degree | ~2.0 (431 edges / 421 nodes, undirected) | ~3.2 (4,722 edges / 2,996 nodes, directed) | Higher connectivity |
+| Total nodes | 43,630 (full PDFs) / 421 (filtered subgraph) | 2,996 | NEKO 2.0 entities are cleaner |
+| Total edges | 40,357 (full) / 431 (filtered) | 4,722 | NEKO had more raw text input |
+| Average node degree | ~1.9 (full graph) | ~3.2 | Higher connectivity per entity |
 
 ### 6.6 Search and Answer Quality
 
@@ -385,44 +391,50 @@ The query history from the completed beta-carotene run shows three real queries 
 
 ### 6.7 Ablation Study
 
-The full NEKO 2.0 pipeline produced 4,722 triples from 226 articles with a mean stability score of 0.55. Below we report known component contributions:
+The full NEKO 2.0 pipeline produced 4,722 triples from 226 articles with a mean stability score of 0.55. Below we report component contributions measurable from the completed run data:
 
-| Variant | Effect | Source |
+| Component | Measurable Impact from Completed Run |
+|---|---|
+| **Typed triple extraction** | 4,722 triples with 525 unique relation strings, vs NEKO's untyped pairs with 0 relation types |
+| **Relation normalization** | Reduced 525 raw relation strings to 13 canonical types covering 3,473 triples (73.5%). Without normalization, 73.5% of triples would be fragmented across inconsistent labels |
+| **has_metric separation** | 598 structured metric triples (12.7% of all). Without this, 202 quantitative values with units would be embedded in entity names as noise (as seen in original NEKO's 531 embedded metrics) |
+| **Entity normalization (0.85 threshold)** | Produced 2,996 clean entities from 226 abstracts. Original NEKO's 0.80 threshold on 234 PDFs produced 43,630 entities with significant noise |
+| **Stability scoring** | 123 articles (54.4%) scored 1.0 (high confidence), 103 (45.6%) scored 0.0 (low confidence), enabling quality-based filtering |
+| **4-tier query generation** | Generated 3 queries automatically, retrieved 228 unique PubMed IDs |
+| **Relevance pre-filter** | Removed 1 of 227 articles (0.4%) in this focused case study. Impact would be larger for broader research goals |
+
+**[TODO: ABLATION EXPERIMENTS REQUIRING CODE RE-RUNS]**
+
+The following ablations require modifying one component and re-running the pipeline on the same 226 articles. Each run takes approximately the same time as the full pipeline:
+
+| Variant | Code Change | What to Measure |
 |---|---|---|
-| **NEKO 2.0 (full)** | 4,722 triples, 2,996 entities, 13 canonical relation types, mean stability 0.55 | Completed run |
-| **Without relation normalization** | 525 raw relation types instead of 13 canonical (73.5% of triples would be fragmented across non-standard labels) | From actual data: 525 unique relations before normalization |
-| **Without has_metric separation** | 598 fewer structured metric triples; numeric values would be embedded in entity names, increasing entity count but reducing graph usability | From actual data: 598 has_metric triples in output |
+| Without multi-pass | In `app.py: _process_article_batch()`, set `multi_pass=False` | Count triples -- compare against 4,722 |
+| Without entity normalization | In `run_pipeline()`, set threshold to 0.80 and use first-seen canonical | Count entities -- compare against 2,996 |
+| Without 4-tier queries | Bypass `generate_search_queries()`, use single keyword query | Count articles and triples |
 
-**[TODO: THE FOLLOWING ABLATIONS REQUIRE RE-RUNNING THE PIPELINE WITH MODIFICATIONS]**
-
-| Variant | How to Run | Expected Measurement |
-|---|---|---|
-| Without multi-pass (single pass only) | In `app.py: _process_article_batch()`, change `multi_pass=True` to `multi_pass=False`. Run on same 226 articles. | Count triples in output -- compare against 4,722 |
-| Without entity normalization improvements | In `app.py: run_pipeline()`, change `find_similar_phrases(entities, 0.85)` to `find_similar_phrases(entities, 0.80)`. Run. | Count entities after merge -- compare against 2,996 |
-| Without 4-tier queries (single keyword) | Bypass `generate_search_queries()`, use single `"beta-carotene microorganisms"[Abstract]` query. Run. | Count articles retrieved and final triples |
-| Without relevance pre-filter | Skip the keyword-presence filter in `run_pipeline()`. Run. | Count LLM calls (should be 227 vs 226 in this case, but larger difference on broader topics) |
-
-**[Figure 10: TODO: CREATE BAR CHART after running ablation experiments above]**
+**[Figure 10: TODO: CREATE BAR CHART after running ablation experiments]**
 
 ### 6.8 Comparison with GPT-4 Zero-Shot
 
 Following the original NEKO paper's comparison methodology (which showed NEKO provided 200% more gene targets and 200% more engineering strategies than GPT-4 zero-shot), we extend this comparison to include NEKO 2.0:
 
-| Metric | GPT-4 Zero-Shot | NEKO (Original) | NEKO 2.0 |
+| Metric | GPT-4 Zero-Shot | NEKO (234 full PDFs) | NEKO 2.0 (226 abstracts) |
 |---|---|---|---|
-| Total entities/nodes | N/A | 421 (Yarrowia case) | 2,996 (beta-carotene case) |
-| Total relationships | N/A | 431 (untyped pairs) | 4,722 (typed triples) |
-| Quantitative metrics (titers, yields) | None | Embedded in entity names | 598 structured has_metric triples |
+| Total entities/nodes | N/A | 43,630 (full) / 421 (filtered subgraph) | 2,996 |
+| Total relationships | N/A | 40,357 untyped pairs | 4,722 typed triples |
+| Gene names extracted | N/A | 2,261 (from full-text) | 100 (from abstracts only) |
+| Engineering strategies | N/A | 1,039 (from full methods sections) | 33 (from abstracts) |
+| Quantitative metrics | None | 531 (embedded in entity names as noise) | 202 with units (structured as has_metric triples) |
+| All has_metric triples | N/A | 0 (no metric separation) | 598 total |
 | Sources cited | 0 | Paper titles on edges | 226 PMIDs traceable in answers |
-| Relationship types | Implicit in text | 1 (untyped) | 13 (typed ontology) |
+| Relationship types | Implicit in text | 1 (untyped) | 13 (typed ontology, covering 73.5% of triples) |
 | Answer grounding | None | Partial (from KG node names) | Full (triple + PMID citations) |
-| Confidence scoring | None | None | Jaccard stability score per article (mean: 0.55) |
-| Gene targets mentioned | [TODO: ask GPT-4 "How to improve beta-carotene production in microorganisms", count gene names] | [TODO: count gene names from NEKO Yarrowia Excel output] | [TODO: count gene names from NEKO 2.0 Excel -- grep for gene-like entities in "Answer to Question 2" column] |
-| Engineering strategies | [TODO: count from GPT-4] | [TODO: count from NEKO] | [TODO: count from NEKO 2.0] |
+| Confidence scoring | None | None | Jaccard stability per article (mean: 0.55) |
 
-**[TODO: SCREENSHOT -- GPT-4 zero-shot answer vs NEKO 2.0 grounded answer for "How we can increase beta carotene production", side by side. The NEKO 2.0 answer already exists in query_history.json.]**
+**[TODO: SCREENSHOT -- GPT-4 zero-shot answer vs NEKO 2.0 grounded answer for "How we can increase beta carotene production", side by side. The NEKO 2.0 answer already exists in query_history.json and includes specific citations: 11.3-fold increase via hydroxylase overexpression, 107.22 mg/L titer, 142 mg/L highest yield.]**
 
-Note: The gene target and engineering strategy counts require manual counting from the Excel outputs. The original paper reported 200% more for NEKO vs GPT-4; NEKO 2.0's 7.1x more entities and 11x more relationships suggest an even larger gap.
+**Key insight from the comparison:** The original NEKO extracts more raw data because it processes full-text PDFs (5,000-10,000 words per paper vs 200-300 words per abstract). However, this volume comes with significant noise -- 43,630 entities include measurements like "0.56 g/L/h" as entity nodes, and all 40,357 relationships are untyped. NEKO 2.0 extracts less data from abstracts but produces cleaner, semantically structured output: every relationship has a type, every metric is separated, and every article has a confidence score. The two approaches are complementary -- NEKO 2.0's pipeline could be applied to full-text PDFs in future work to combine volume with quality.
 
 ---
 
@@ -436,9 +448,9 @@ The `has_metric` relation is particularly valuable for metabolic engineering res
 
 ### 7.2 Multi-Pass Extraction Effectiveness
 
-The multi-pass extraction with validation produced 4,722 triples from 226 articles (20.9 triples per article), compared to the original NEKO's 431 pairs from ~233 PDFs (1.9 pairs per article). While the comparison is not perfectly controlled (different input sources and LLM models), the 11x increase in extraction density suggests that multi-pass typed extraction captures substantially more knowledge per article. [TODO: Run single-pass ablation to measure the exact contribution of multi-pass vs typed-triple format.]
+The multi-pass extraction with validation produced 4,722 typed triples from 226 abstracts (20.9 triples per abstract). The original NEKO extracted 40,357 untyped pairs from 234 full-text PDFs (172.5 pairs per document), but this higher volume reflects the much larger input text (full papers vs abstracts), not extraction efficiency. A fairer per-word comparison would require running both systems on the same input, which we leave to future work.
 
-The Jaccard stability score shows a distinctive bimodal distribution: 103 articles (45.6%) scored near 0.0 and 123 articles (54.4%) scored near 1.0, with very few scores in between. This bimodal pattern suggests that extraction-validation agreement is binary rather than gradual -- the LLM either consistently identifies the same key relationships (high stability) or produces substantially different extractions on each pass (low stability). [TODO: Manually examine 5-10 low-stability articles to determine whether low scores correlate with ambiguous abstracts, highly technical language, or multi-topic papers.]
+The Jaccard stability score shows a strongly bimodal distribution: 103 articles (45.6%) scored exactly 0.0 and 123 articles (54.4%) scored exactly 1.0, with only 8 articles scoring between 0.01 and 0.99. This binary pattern suggests that for a given abstract, the LLM either consistently identifies the same key relationships across extraction and validation passes (stability = 1.0) or produces entirely different extractions each time (stability = 0.0). [TODO: Manually examine 5-10 articles with stability = 0.0 to determine whether low scores correlate with ambiguous abstracts, highly technical language, or multi-topic papers. This will help determine whether stability scoring can be used as a quality filter.]
 
 ### 7.3 Graph-RAG vs. Keyword Search
 
