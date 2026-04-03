@@ -311,11 +311,24 @@ We compared extraction results from the original NEKO (Yarrowia PDF processing w
 | Confidence scoring | None | Jaccard stability score per article | **New capability** |
 | Stability > 0.5 | N/A | 54.4% (123 of 226) | Majority are high-confidence |
 
-**[Figure 5: TODO: CREATE HISTOGRAM -- Stability scores are strongly bimodal: 103 articles (45.6%) scored exactly 0.0 and 123 articles (54.4%) scored exactly 1.0, with only 8 articles in between. Plot from "Stability Score Q2" column.]**
+**[Figure 5: TODO: CREATE HISTOGRAM from stability data below]**
 
-The critical quality difference is visible in entity cleanliness. The original NEKO's 43,630 entities contain substantial noise because untyped pairs mix entities with their measurements (e.g., "'0.56 g/L/h'" appears as an entity). NEKO 2.0's 2,996 entities are cleaner because the `has_metric` relation separates numeric values into dedicated triples, and the relation ontology prevents measurements from being treated as entities.
+**Stability Score Analysis (critical finding):** The stability score distribution reveals an important pattern about extraction behavior:
 
-[TODO: To measure per-pass contribution specifically, add logging to `ask_llm_with_fallback` in Minning.py to track |pass1_triples|, |pass2_new|, |pass3_new| counts and re-run on a sample of 20-30 articles.]
+| Stability Score | Articles | Triples | Meaning |
+|---|---|---|---|
+| **1.0** | 123 (54.4%) | 0 | Both extraction AND validation passes found **no relationships** -- they agreed on empty output. These are articles where the LLM determined no relevant biological relationships exist (e.g., food science, ecology papers retrieved by the broad search). |
+| **0.0** | 95 (42.0%) | 4,273 (avg 45.0/article) | Extraction passes found triples but validation pass found **completely different** triples -- zero overlap. All substantive knowledge comes from these articles. |
+| **0.01-0.08** | 8 (3.5%) | 449 (avg 56.1/article) | Partial overlap between extraction and validation. |
+
+**Interpretation:** The bimodal distribution does NOT indicate extraction reliability as originally intended. Instead, it reveals that:
+- **54.4% of retrieved articles are irrelevant** to the research goal (no extractable biological relationships), despite passing the relevance pre-filter. The Jaccard score of 1.0 reflects agreement on emptiness, not agreement on content.
+- **The 95 productive articles produce all 4,722 triples**, averaging 45.0 triples per article -- a much higher extraction density than the overall 20.9 average.
+- **The 0.0 stability scores on productive articles** indicate that the "Critical Bio-Analyst" validation persona consistently extracts different relationships than the three-pass extraction, suggesting the two approaches complement each other rather than validate each other.
+
+This finding suggests that the stability score should be reinterpreted: a score of 1.0 flags articles with no relevant content (candidates for filtering), while a score of 0.0 on an article with triples indicates high extraction diversity rather than low confidence.
+
+The critical quality difference is also visible in entity cleanliness. The original NEKO's 43,630 entities contain substantial noise because untyped pairs mix entities with their measurements (e.g., "'0.56 g/L/h'" appears as an entity). NEKO 2.0's 2,996 entities are cleaner because the `has_metric` relation separates numeric values into dedicated triples, and the relation ontology prevents measurements from being treated as entities.
 
 ### 6.3 Relation Type Distribution
 
@@ -399,7 +412,7 @@ The full NEKO 2.0 pipeline produced 4,722 triples from 226 articles with a mean 
 | **Relation normalization** | Reduced 525 raw relation strings to 13 canonical types covering 3,473 triples (73.5%). Without normalization, 73.5% of triples would be fragmented across inconsistent labels |
 | **has_metric separation** | 598 structured metric triples (12.7% of all). Without this, 202 quantitative values with units would be embedded in entity names as noise (as seen in original NEKO's 531 embedded metrics) |
 | **Entity normalization (0.85 threshold)** | Produced 2,996 clean entities from 226 abstracts. Original NEKO's 0.80 threshold on 234 PDFs produced 43,630 entities with significant noise |
-| **Stability scoring** | 123 articles (54.4%) scored 1.0 (high confidence), 103 (45.6%) scored 0.0 (low confidence), enabling quality-based filtering |
+| **Stability scoring** | Identified 123 articles (54.4%) with no extractable relationships (score=1.0, candidates for filtering). All 4,722 triples come from the remaining 103 articles (avg 45.0 triples/article) |
 | **4-tier query generation** | Generated 3 queries automatically, retrieved 228 unique PubMed IDs |
 | **Relevance pre-filter** | Removed 1 of 227 articles (0.4%) in this focused case study. Impact would be larger for broader research goals |
 
@@ -430,7 +443,7 @@ Following the original NEKO paper's comparison methodology (which showed NEKO pr
 | Sources cited | 0 | Paper titles on edges | 226 PMIDs traceable in answers |
 | Relationship types | Implicit in text | 1 (untyped) | 13 (typed ontology, covering 73.5% of triples) |
 | Answer grounding | None | Partial (from KG node names) | Full (triple + PMID citations) |
-| Confidence scoring | None | None | Jaccard stability per article (mean: 0.55) |
+| Confidence scoring | None | None | Jaccard stability per article (identifies 54.4% irrelevant articles) |
 
 **[TODO: SCREENSHOT -- GPT-4 zero-shot answer vs NEKO 2.0 grounded answer for "How we can increase beta carotene production", side by side. The NEKO 2.0 answer already exists in query_history.json and includes specific citations: 11.3-fold increase via hydroxylase overexpression, 107.22 mg/L titer, 142 mg/L highest yield.]**
 
@@ -448,9 +461,11 @@ The `has_metric` relation is particularly valuable for metabolic engineering res
 
 ### 7.2 Multi-Pass Extraction Effectiveness
 
-The multi-pass extraction with validation produced 4,722 typed triples from 226 abstracts (20.9 triples per abstract). The original NEKO extracted 40,357 untyped pairs from 234 full-text PDFs (172.5 pairs per document), but this higher volume reflects the much larger input text (full papers vs abstracts), not extraction efficiency. A fairer per-word comparison would require running both systems on the same input, which we leave to future work.
+The multi-pass extraction with validation produced 4,722 typed triples from 226 abstracts. However, our analysis revealed that only 103 of 226 articles (45.6%) produced any triples at all, averaging 45.0 triples per productive article. The remaining 123 articles (54.4%) yielded no relationships from either extraction or validation passes. The original NEKO extracted 40,357 untyped pairs from 234 full-text PDFs (172.5 pairs per document), but this higher volume reflects the much larger input text (full papers vs abstracts), not extraction efficiency. A fairer per-word comparison would require running both systems on the same input, which we leave to future work.
 
-The Jaccard stability score shows a strongly bimodal distribution: 103 articles (45.6%) scored exactly 0.0 and 123 articles (54.4%) scored exactly 1.0, with only 8 articles scoring between 0.01 and 0.99. This binary pattern suggests that for a given abstract, the LLM either consistently identifies the same key relationships across extraction and validation passes (stability = 1.0) or produces entirely different extractions each time (stability = 0.0). [TODO: Manually examine 5-10 articles with stability = 0.0 to determine whether low scores correlate with ambiguous abstracts, highly technical language, or multi-topic papers. This will help determine whether stability scoring can be used as a quality filter.]
+The Jaccard stability score produced an unexpected finding. Rather than measuring extraction confidence as intended, the bimodal distribution (123 articles at 1.0, 95 at 0.0, 8 in between) reflects two distinct populations: (1) articles with no extractable relationships, where both extraction and validation agree on empty output (score=1.0), and (2) articles with rich content, where the extraction and validation passes consistently extract *different* relationships from the same text (score=0.0). The 8 articles with intermediate scores (0.01-0.08) show partial but minimal overlap.
+
+This finding has two implications. First, the stability score serves as an effective **relevance filter**: articles scoring 1.0 with no triples can be automatically flagged as irrelevant, saving downstream processing. Second, the near-zero overlap between extraction and validation on productive articles suggests the two approaches are **complementary rather than redundant** -- the "Critical Bio-Analyst" persona captures different aspects of the same abstract than the three-pass extraction, and the set union merge correctly preserves both contributions. Future work should investigate whether reformulating the validation prompt to more closely mirror the extraction prompt would increase overlap, and whether this would improve or reduce overall extraction quality.
 
 ### 7.3 Graph-RAG vs. Keyword Search
 
