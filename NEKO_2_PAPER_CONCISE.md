@@ -1,4 +1,4 @@
-# NEKO 2.0: Enhanced Scientific Knowledge Mining with Typed Relation Extraction, Multi-Pass Validation, and Graph-RAG Querying
+# KGMiner: Ontology-Constrained Multi-Pass Relation Extraction and Graph-RAG for Scientific Literature Mining
 
 [Authors]
 
@@ -10,155 +10,196 @@
 
 ## Abstract
 
-Large language models (LLMs) can answer general scientific questions but lack the ability to provide specific, cited knowledge from recent literature. NEKO (Network for Knowledge Organization) addressed this gap by extracting entity pairs from PubMed abstracts and building knowledge graphs. However, NEKO extracted only untyped entity pairs, used single-pass extraction, and built undirected graphs without relationship labels. Here, we present NEKO 2.0 with key improvements: (1) typed triple extraction with a 13-relation controlled ontology, (2) three-pass extraction with validation increasing recall by 170.6%, (3) Jaccard stability scoring for per-article confidence, (4) LLM-driven multi-tier PubMed query generation, (5) relation and entity normalization pipelines, (6) directed multigraph construction, and (7) semantic Graph-RAG querying with anti-hallucination answer generation. On a beta-carotene production case study, NEKO 2.0 extracted 4,722 typed triples with 2,996 normalized entities from 226 articles, compared to the original NEKO's 40,357 untyped pairs with 43,630 noisy entities from 234 full-text PDFs. The controlled ontology covers 73.5% of extracted triples, and the anti-hallucination framework enables citation-backed answers with specific quantitative metrics (e.g., 11.3-fold increase, 107.22 mg/L) traceable to source PMIDs. Code: https://github.com/Up14/Knowledge.
+Extracting structured knowledge from scientific literature at scale remains challenging. Existing approaches either produce unstructured text summaries or extract entity associations without specifying relationship types, limiting their utility for mechanistic reasoning. We present KGMiner, a pipeline for constructing typed, directed knowledge graphs from PubMed abstracts using large language models (LLMs). KGMiner introduces three key contributions: (1) ontology-constrained triple extraction, where LLMs extract (Subject, Relation, Object) triples constrained to a 13-relation biological vocabulary with explicit rules for separating quantitative metrics; (2) multi-pass extraction with progressive refinement, where each abstract is processed through three complementary extraction passes followed by an independent validation pass, increasing recall by 170.6% over single-pass extraction; and (3) Graph-RAG querying with anti-hallucination answer generation, where semantic search over triple embeddings enables natural language queries with citation-backed, evidence-grounded responses. On a beta-carotene biosynthesis case study (226 PubMed articles), KGMiner extracted 4,722 typed triples across 2,996 normalized entities, with the controlled ontology covering 73.5% of extracted relationships. A post-extraction normalization pipeline maps 41 relation synonyms to canonical terms and resolves entity aliases using embedding-based similarity with transitive chain resolution. The anti-hallucination framework produces answers with specific quantitative metrics (e.g., 11.3-fold increase, 107.22 mg/L) traceable to source PubMed IDs. Code is available at https://github.com/Up14/Knowledge.
 
-**Keywords:** knowledge graph, LLM, text mining, relation extraction, synthetic biology, RAG
+**Keywords:** knowledge graph, relation extraction, large language model, text mining, synthetic biology, retrieval-augmented generation
 
 ---
 
 ## 1. Introduction
 
-The rapid growth of scientific literature challenges researchers' ability to synthesize knowledge. PubMed contains over 36 million citations, with thousands added daily. LLMs such as GPT-4 can answer scientific questions, but their responses are limited by pretraining cutoff dates and lack citations (Xiao et al., 2025).
+The volume of biomedical literature continues to grow at an unprecedented rate, with PubMed indexing over 36 million citations and adding thousands daily. Researchers face an increasingly difficult challenge in synthesizing knowledge across publications to identify gene targets, metabolic engineering strategies, and quantitative performance benchmarks relevant to their work.
 
-NEKO (Xiao et al., 2025) combined PubMed search with LLM-based entity extraction and knowledge graph construction, showing 200% more gene targets than GPT-4 zero-shot responses. However, we identified key limitations during extended use: (1) untyped entity pairs without relationship labels, (2) single-pass extraction missing relationships, (3) no confidence measurement, (4) manual keyword search, (5) undirected graphs losing causal direction, (6) keyword-only graph querying, and (7) ungrounded answer generation prone to hallucination.
+Large language models (LLMs) have emerged as promising tools for scientific question answering. However, when used in zero-shot mode, LLMs are constrained by their training data cutoff and cannot cite specific sources. Their responses tend to be generic and lack the domain-specific detail needed for experimental planning (Xiao et al., 2025). Retrieval-augmented generation (RAG) addresses this by grounding LLM outputs in retrieved documents (Lewis et al., 2020), but traditional RAG operates on flat document collections and does not capture structured relationships between biological entities.
 
-NEKO 2.0 addresses each limitation with the improvements listed in Table 1. The core contributions are typed triple extraction with a controlled ontology, multi-pass extraction with stability scoring, and semantic Graph-RAG querying with anti-hallucination guardrails.
+Knowledge graph construction from scientific text offers a solution by organizing extracted information into structured, queryable networks. However, existing approaches face several open challenges: (1) most LLM-based extraction systems produce entity associations without typed relationships, making it impossible to distinguish whether gene X activates, inhibits, or encodes a downstream target; (2) single-pass LLM extraction consistently misses secondary relationships in complex abstracts; (3) post-extraction normalization is needed to consolidate synonymous entities and relationship terms across papers; and (4) when querying the resulting knowledge graph, answer generation must be grounded in extracted evidence to prevent hallucination.
 
-![Pipeline Comparison](figures/fig1_pipeline_comparison.png)
-*Figure 1. Pipeline comparison. (a) Original NEKO: 7 steps, all untyped. (b) NEKO 2.0: 9 steps, all new or replaced.*
+In this work, we present KGMiner, a pipeline that addresses these challenges through three main contributions:
+
+1. **Ontology-constrained triple extraction.** We constrain LLM extraction to produce typed (Subject, Relation, Object) triples using a 13-relation biological vocabulary. The extraction prompt includes explicit rules for separating quantitative measurements into structured metric triples, preventing numeric values from being conflated with entity names.
+
+2. **Multi-pass extraction with progressive refinement.** Each abstract is processed through three sequential extraction passes -- exhaustive, overlooked scan, and gap-filling -- followed by an independent validation pass. Our ablation study on 15 articles shows this approach extracts 170.6% more triples than single-pass extraction, with each pass contributing meaningfully (45.7%, 35.3%, and 18.9% respectively).
+
+3. **Graph-RAG with anti-hallucination answer generation.** We combine embedding-based semantic search over extracted triples with strict evidence-grounding rules, producing answers where every claim is traceable to specific triples and source PubMed IDs.
 
 ---
 
-## 2. Methods
+## 2. Related Work
 
-### 2.1 LLM-Driven Query Generation
+### 2.1 LLM-Based Scientific Text Mining
 
-Instead of manual keywords, NEKO 2.0 accepts a natural language research goal. An LLM decomposes the goal into structured concepts (compound, organism, process) and generates complementary PubMed queries ranging from broad to targeted, with noise-word filtering and multi-word term quoting. Concepts and queries are cached via MD5 hashing for reproducibility.
+General-purpose scientific tools such as Elicit, Semantic Scholar, and Consensus use language models to search and summarize literature, but produce text summaries rather than structured knowledge representations. Domain-specific models including BioGPT (Luo et al., 2022) and BioMedLM (Bolton et al., 2024) are pre-trained on biomedical text but face hallucination issues when generating answers without grounding in specific retrieved documents.
 
-### 2.2 Typed Triple Extraction with Controlled Ontology
+NEKO (Xiao et al., 2025) combined PubMed search with LLM-based extraction to build knowledge graphs from scientific abstracts. Their workflow extracted entity associations as untyped pairs and constructed undirected graphs visualized with Pyvis. While NEKO demonstrated the feasibility of LLM-driven knowledge graph construction for synthetic biology, several limitations remain: extracted relationships lack type labels (e.g., activation vs. inhibition), single-pass extraction limits recall, entity deduplication uses an arbitrary canonical selection strategy, and the keyword-based graph search requires users to know exact entity names. Our work addresses each of these limitations through ontology-constrained typed extraction, multi-pass refinement, improved normalization, and semantic Graph-RAG querying.
 
-The most significant change replaces untyped (Entity A, Entity B) pairs with typed (Subject, Relation, Object) triples constrained to a 13-relation ontology: *activates, inhibits, produces, is_variant_of, encodes, is_host_for, increases, decreases, integrated_in, has_capability, is_a, has_metric, is_produced_by*. The extraction prompt enforces this ontology and includes explicit rules for separating quantitative measurements into `has_metric` triples (e.g., "strain_X, has_metric, 39.5 g/L") rather than embedding values in entity names.
+### 2.2 Biomedical Knowledge Graph Construction
 
-### 2.3 Multi-Pass Extraction and Stability Scoring
+Traditional biomedical knowledge graph pipelines rely on named entity recognition (NER) and relation extraction (RE) using supervised models trained on annotated datasets. Tools such as PubTator (Wei et al., 2024) and BERN2 (Kim et al., 2022) provide NER for biomedical entities but require pre-defined entity types and labeled training data. Recent work has explored LLMs for zero-shot relation extraction (Wadhwa et al., 2023), but these approaches typically process individual documents without aggregating knowledge across a corpus or normalizing entities across papers.
 
-Each abstract is processed through three sequential extraction passes at temperature=0: (1) exhaustive extraction of all biological relationships, (2) overlooked scan given Pass 1 results, and (3) gap-filling given all previous triples. Triples from all passes are merged via set union. A separate validation pass with a "Critical Bio-Analyst" persona independently extracts relationships. The Jaccard stability score measures agreement between extraction and validation:
+### 2.3 Graph-Based Retrieval-Augmented Generation
+
+RAG combines retrieval systems with language models to ground outputs in specific documents (Lewis et al., 2020). Graph-RAG extends this paradigm by using knowledge graphs as the retrieval structure. Microsoft's GraphRAG (Edge et al., 2024) demonstrated that graph-based retrieval produces more comprehensive answers than traditional RAG for synthesis queries spanning multiple documents. KGMiner applies this principle using semantic search over typed triple embeddings as the retrieval mechanism.
+
+---
+
+## 3. Methods
+
+### 3.1 System Overview
+
+KGMiner operates as a six-stage pipeline (Figure 1): (1) automated query generation, (2) literature retrieval with relevance filtering, (3) ontology-constrained multi-pass triple extraction, (4) relation and entity normalization, (5) directed multigraph construction, and (6) Graph-RAG querying with anti-hallucination answer generation.
+
+![Pipeline](figures/fig1_pipeline_comparison.png)
+*Figure 1. KGMiner pipeline overview. The system accepts a natural language research goal and produces a typed, directed knowledge graph with grounded query answering.*
+
+### 3.2 Automated Query Generation
+
+The system accepts a natural language research goal (e.g., "improving beta-carotene production in microorganisms"). An LLM decomposes the goal into structured concept categories -- compound, organism, process, and constraints -- with synonyms for each category. From these concepts, complementary PubMed queries are constructed at multiple specificity levels, from broad (compound AND organism) to targeted (all concepts with field restrictions). Noise terms (e.g., "study", "review", "effect") are filtered from baseline queries. Both concepts and queries are cached using content-based hashing for reproducibility.
+
+Article retrieval uses the NCBI Entrez API with batched fetching, retry logic, and rate limiting. Articles with missing abstracts are filtered, and PubMed IDs (PMIDs) are stored for downstream citation tracing. A lightweight relevance pre-filter removes abstracts that do not contain any goal-derived keyword, reducing unnecessary LLM processing.
+
+### 3.3 Ontology-Constrained Triple Extraction
+
+Each abstract is processed to extract typed triples in the format (Subject, Relation, Object), where the Relation is constrained to a controlled vocabulary of 13 biological relationship types (Table 1).
+
+| Relation | Description | Example |
+|---|---|---|
+| activates | Positive regulation | (promoter_TEF, activates, HMG1) |
+| inhibits | Negative regulation | (CRISPRi, inhibits, competing_pathway) |
+| produces | Biosynthetic production | (Y. lipolytica, produces, beta-carotene) |
+| increases | Quantitative increase | (codon_optimization, increases, expression) |
+| decreases | Quantitative decrease | (knockout, decreases, byproduct) |
+| encodes | Gene-protein relationship | (crtYB, encodes, lycopene_cyclase) |
+| is_host_for | Host organism | (E. coli, is_host_for, mevalonate_pathway) |
+| integrated_in | Genomic integration | (cassette, integrated_in, chromosome) |
+| is_variant_of | Strain variant | (Po1g, is_variant_of, Y. lipolytica) |
+| has_capability | Functional capability | (R. toruloides, has_capability, lipid_accumulation) |
+| is_a | Classification | (beta-carotene, is_a, carotenoid) |
+| has_metric | Quantitative measurement | (strain_X, has_metric, "39.5 g/L") |
+| is_produced_by | Reverse production | (fatty_acids, is_produced_by, R. toruloides) |
+
+*Table 1. Controlled relation vocabulary with 13 biological relationship types.*
+
+The extraction prompt includes explicit rules for numeric data handling: quantitative measurements must be separated into dedicated `has_metric` triples rather than being embedded in entity names. For example, instead of extracting a single relationship containing "39.5 g/L beta-carotene", the system produces two triples: (strain_X, produces, beta-carotene) and (strain_X, has_metric, "39.5 g/L"). This prevents combinatorial entity proliferation where each unique measurement creates a distinct entity node.
+
+### 3.4 Multi-Pass Extraction with Progressive Refinement
+
+Rather than processing each abstract once, KGMiner applies three sequential extraction passes at temperature=0 for deterministic output:
+
+**Pass 1 (Exhaustive).** The LLM extracts all biological relationships, including causal, mechanistic, associative, and implied interactions. The research goal provides contextual focus.
+
+**Pass 2 (Overlooked Scan).** The LLM receives Pass 1 results and re-scans for missed interactions and engineering details, explicitly informed of what was already found.
+
+**Pass 3 (Gap-Filling).** Given all triples from Passes 1 and 2, the LLM identifies remaining missing relationships.
+
+Triples from all passes are merged via set union, ensuring no information is discarded. A separate validation pass uses an independent analytical persona to extract relationships from the same abstract without seeing prior results. Agreement between extraction and validation is quantified using the Jaccard similarity coefficient:
 
 *Stability = |Extraction &cap; Validation| / |Extraction &cup; Validation|*
 
-### 2.4 Normalization Pipeline
+Validation triples are also merged into the final set regardless of agreement level.
 
-**Relation normalization** maps 41 synonyms to 13 canonical terms (e.g., induces/enhances/stimulates/upregulates &rarr; activates) using pre-compiled regex patterns sorted by length.
+### 3.5 Post-Extraction Normalization
 
-**Entity normalization** uses `all-MiniLM-L6-v2` embeddings with cosine similarity threshold 0.85 (raised from 0.80). The longer entity name is selected as canonical (e.g., "Escherichia coli K-12" over "E. coli"), and transitive chains are resolved with circular reference detection.
+**Relation normalization** maps 41 synonym terms to the 13 canonical relations using pre-compiled regular expressions sorted by length to prevent substring conflicts. For example, "induces", "enhances", "stimulates", "upregulates", and "promotes" all map to `activates`. After normalization, triples within each article are deduplicated using case-insensitive matching.
 
-### 2.5 Directed Multigraph and Graph-RAG
+**Entity normalization** uses `all-MiniLM-L6-v2` sentence embeddings (384 dimensions) to identify synonymous entities. Cosine similarity above 0.85 triggers merging. The canonical form is selected as the longer (more descriptive) entity name -- for example, "Escherichia coli K-12" is preferred over "E. coli". Transitive normalization chains (A&rarr;B, B&rarr;C) are resolved to direct mappings (A&rarr;C, B&rarr;C) with circular reference detection.
 
-NEKO 2.0 builds a directed multigraph (NetworkX MultiDiGraph) where edges carry relation type, source paper title, and PMID. For querying, all triples are encoded into 384-dimensional vectors using `all-MiniLM-L6-v2`. Natural language questions are matched against triples via cosine similarity (top-k=50, threshold=0.25), with subgraph expansion along directed edges.
+### 3.6 Knowledge Graph Construction and Querying
 
-Answer generation uses an 8-rule anti-hallucination system prompt requiring every claim to be traceable to specific triples with PMID citations. If evidence is insufficient, the system responds "NOT FOUND IN PROVIDED DATA."
+Normalized triples are assembled into a directed multigraph where nodes represent biological entities and edges carry three attributes: relation type, source paper title, and PMID. Multiple edges between the same node pair are permitted, representing different relationship types or evidence from different sources.
 
-| Component | NEKO | NEKO 2.0 | Change |
-|---|---|---|---|
-| Query construction | Manual keyword | LLM concept decomposition | Replaced |
-| Extraction format | Untyped pairs (A, B) | Typed triples (S, R, O) | Replaced |
-| Extraction passes | 1 pass | 3 passes + validation | Replaced |
-| Confidence scoring | None | Jaccard stability score | New |
-| Relation normalization | None | 41 synonyms &rarr; 13 canonical | New |
-| Entity normalization | cos > 0.80, arbitrary | cos > 0.85, longer-name, transitive | Enhanced |
-| Graph structure | Undirected simple | Directed multigraph | Replaced |
-| Graph search | Keyword + BFS | Semantic embedding search | Replaced |
-| Answer generation | Generic summary | Anti-hallucination with citations | Replaced |
+For querying, all triples are encoded into embedding vectors in their natural language form ("subject relation object"). Natural language questions are matched against triple embeddings via cosine similarity (top-k=50, threshold=0.25), with subgraph expansion along directed edges.
 
-*Table 1. Component comparison between NEKO and NEKO 2.0.*
+Answer generation uses a strict evidence-grounding protocol: the LLM receives retrieved triples with source metadata and must trace every claim to specific triples with PMID citations. If evidence is insufficient, the system explicitly states this rather than generating ungrounded content.
 
 ---
 
-## 3. Results
+## 4. Results
 
-### 3.1 Case Study: Beta-Carotene Production
+### 4.1 Case Study: Beta-Carotene Biosynthesis
 
-We applied NEKO 2.0 to "improving beta-carotene production in microorganisms" and compared against the original NEKO's Yarrowia lipolytica case study (234 full-text PDFs processed with Qwen1.5-14B).
+We evaluated KGMiner on the research goal "improving beta-carotene production in microorganisms," retrieving 226 PubMed articles after automated query generation and relevance filtering.
 
-**Important:** The original NEKO processed full PDF text (5,000-10,000 words/paper), while NEKO 2.0 processes abstracts only (200-300 words). Raw quantity comparisons favor the original; the key improvement is extraction *quality*.
+![Comparison](figures/fig_comparison_overview.png)
+*Figure 2. Extraction results summary showing quality metrics and graph capabilities.*
 
-![Comparison Overview](figures/fig_comparison_overview.png)
-*Figure 2. Quantitative comparison. Left: raw volume (log scale). Center: quality metrics. Right: graph capabilities.*
+| Metric | Value |
+|---|---|
+| Articles processed | 226 |
+| Total typed triples extracted | 4,722 |
+| Unique normalized entities | 2,996 |
+| Unique raw relation strings | 525 |
+| Canonical ontology coverage | 3,473 triples (73.5%) |
+| Structured metric triples (has_metric) | 598 (12.7%) |
+| Productive articles (with triples) | 103 (45.6%) |
+| Avg triples per productive article | 45.0 |
 
-| Metric | NEKO (234 PDFs) | NEKO 2.0 (226 abstracts) |
-|---|---|---|
-| Total relationships | 40,357 untyped pairs | 4,722 typed triples |
-| Unique entities | 43,630 (noisy) | 2,996 (normalized) |
-| Relation types | 1 (untyped) | 13 canonical (73.5% coverage) |
-| Structured metrics | 0 (embedded in names) | 598 has_metric triples |
-| PMID citations | 0 | 226 traceable |
-| Confidence scoring | None | Jaccard stability per article |
+### 4.2 Relation Type Distribution
 
-### 3.2 Relation Type Distribution
+![Relations](figures/fig6_relation_distribution.png)
+*Figure 3. Distribution of relation types across 4,722 extracted triples.*
 
-![Relation Distribution](figures/fig6_relation_distribution.png)
-*Figure 3. Relation type distribution across 4,722 triples. The 13 canonical types cover 73.5%; 525 raw types remain after normalization.*
+The most frequent canonical relations are has_metric (598, 12.7%), is_a (543, 11.5%), has_capability (525, 11.1%), and produces (523, 11.1%). The 13 canonical types cover 73.5% of all triples. The remaining 26.5% use 512 non-canonical relation strings, indicating opportunities for ontology expansion.
 
-The most frequent canonical relations are has_metric (598, 12.7%), is_a (543, 11.5%), has_capability (525, 11.1%), and produces (523, 11.1%). The 26.5% non-canonical triples indicate room for expanding the synonym dictionary.
+### 4.3 Stability Score Analysis
 
-### 3.3 Stability Score Analysis
+![Stability](figures/fig5_stability_histogram.png)
+*Figure 4. Stability score distribution across 226 articles.*
 
-![Stability Histogram](figures/fig5_stability_histogram.png)
-*Figure 4. Bimodal stability distribution. Red: 103 productive articles (all triples). Green: 123 articles with no extractable relationships.*
+The Jaccard stability scores exhibit a strongly bimodal distribution: 123 articles (54.4%) scored 1.0 because both extraction and validation found no relationships (irrelevant articles), while 95 articles (42.0%) scored 0.0. All 4,722 triples originate from the 103 articles scoring below 1.0. The 0.0 scores on productive articles indicate that the extraction and validation passes capture complementary rather than identical relationships, with both contributions preserved via set union. This bimodal pattern suggests the stability metric functions as an effective relevance filter: articles scoring 1.0 can be automatically flagged as containing no domain-relevant relationships.
 
-The stability scores are strongly bimodal: 123 articles (54.4%) scored 1.0 because both extraction and validation found no relationships (irrelevant articles), while 95 articles (42.0%) scored 0.0. All 4,722 triples come from the 103 articles with scores below 1.0, averaging 45.0 triples per productive article. The 0.0 scores on productive articles indicate that the extraction and validation passes capture *complementary* rather than *identical* relationships, with both contributions preserved via set union.
+### 4.4 Multi-Pass Ablation Study
 
-### 3.4 Multi-Pass Ablation
+We conducted an ablation experiment on 15 productive articles using llama-3.3-70b:
 
-We ran an ablation experiment on 15 productive articles using llama-3.3-70b via Groq API:
+![Ablation](figures/fig10_ablation_results.png)
+*Figure 5. Multi-pass ablation results. Left: per-article comparison. Right: per-pass contribution.*
 
-![Ablation Results](figures/fig10_ablation_results.png)
-*Figure 5. Left: per-article triple counts for single-pass vs multi-pass. Right: per-pass contribution.*
-
-| Mode | Total Triples | Avg/Article |
+| Extraction Mode | Total Triples | Avg per Article |
 |---|---|---|
 | Single-pass | 316 | 21.1 |
 | Multi-pass (3 passes) | 855 | 57.0 |
-| **Gain** | **+170.6%** | **2.7x** |
+| **Improvement** | **+170.6%** | **2.7x** |
 
-Per-pass contributions: Pass 1 (exhaustive) 45.7%, Pass 2 (overlooked scan) 35.3%, Pass 3 (gap-filling) 18.9%. Every pass contributes meaningfully, with Pass 2 being most effective by leveraging awareness of previously found triples.
+Per-pass contributions: Pass 1 (exhaustive) 45.7%, Pass 2 (overlooked scan) 35.3%, Pass 3 (gap-filling) 18.9%. Every pass contributes meaningfully. Pass 2 is most effective because it re-scans with explicit awareness of previously found relationships, targeting gaps that single-pass extraction misses.
 
-### 3.5 Query Answering Comparison
+### 4.5 Query Answering Evaluation
 
-We asked both systems: "How can we increase beta-carotene production?"
+![Query Comparison](figures/fig9b_query_differences_table.png)
+*Figure 6. Comparison of query answering approaches.*
 
-![Query Comparison](figures/fig9_query_comparison.png)
-*Figure 6. Side-by-side answers. NEKO: generic summary from node names. NEKO 2.0: grounded answer with specific metrics and citations.*
-
-![Key Differences](figures/fig9b_query_differences_table.png)
-*Figure 7. Key differences in query answering.*
-
-NEKO's answer cited vague metrics ("up to 4-fold increase") from LLM training data with zero PMIDs. NEKO 2.0's answer cited specific values (11.3-fold increase via hydroxylase overexpression, 107.22 mg/L yield, 142 mg/L highest reported) all traceable to extracted triples from 226 source papers.
+We evaluated query answering by asking "How can we increase beta-carotene production?" The Graph-RAG approach with anti-hallucination produced answers citing specific quantitative metrics from source papers: 11.3-fold increase via hydroxylase overexpression, 107.22 mg/L yield, and 142 mg/L highest reported titer -- all traceable to extracted triples with PMIDs. In contrast, a baseline approach using entity names without relationship types produced generic recommendations with vague metrics (e.g., "up to 4-fold increase") untraceable to specific sources.
 
 ---
 
-## 4. Discussion
+## 5. Discussion
 
-### 4.1 Typed Triples Enable Mechanistic Queries
+### 5.1 Ontology-Constrained Extraction
 
-The shift from untyped pairs to typed triples is the most impactful improvement. In the original NEKO, (HMG-CoA reductase, mevalonate pathway) only indicates association. In NEKO 2.0, (HMG-CoA reductase, activates, mevalonate pathway) captures the mechanism. The `has_metric` relation (598 triples) separates quantitative data from entity names, enabling performance benchmark queries across studies.
+Constraining LLM extraction to a typed vocabulary transforms the output from association networks to mechanistic knowledge graphs. The `has_metric` relation (598 triples, 12.7%) is particularly valuable: by separating quantitative data from entity names, researchers can query performance benchmarks across studies without values being conflated with entity identifiers. Without this separation, each unique measurement creates a distinct entity node, leading to entity proliferation. Prior work on LLM-based knowledge extraction from scientific text (Xiao et al., 2025) extracted untyped entity pairs, which limits downstream mechanistic reasoning.
 
-### 4.2 Multi-Pass Extraction
+### 5.2 Multi-Pass Extraction
 
-Single-pass extraction misses 63% of relationships captured by multi-pass (316 vs 855 triples). Pass 2 (35.3% contribution) is most effective because it re-scans with awareness of what was already found, targeting gaps. This confirms that LLMs consistently overlook secondary details on a single pass.
+Our ablation demonstrates that single-pass extraction misses 63% of relationships captured by multi-pass (316 vs 855 triples). This is consistent with known LLM behavior: models tend to focus on prominent information and overlook secondary details on a single pass. The progressive refinement strategy, where each subsequent pass is informed by previous results, is more effective than independent repeated extraction because it explicitly targets unexplored aspects of the text.
 
-### 4.3 Stability as Relevance Filter
+### 5.3 Limitations
 
-The Jaccard stability score unexpectedly functions as a relevance filter rather than a confidence metric: articles scoring 1.0 are irrelevant (no extractable relationships), while productive articles score near 0.0 (extraction and validation find complementary triples). Future work should investigate whether this bimodal pattern holds across research domains.
-
-### 4.4 Limitations
-
-(1) Evaluation uses case studies rather than standardized benchmarks. (2) The 13-relation ontology may miss domain-specific relationships. (3) Multi-pass extraction quadruples LLM costs. (4) Only abstracts are processed; full-text would increase coverage. (5) 26.5% of triples use non-canonical relations, suggesting the ontology needs expansion.
+(1) Evaluation uses case studies rather than standardized NER/RE benchmarks such as BioCreative or ChemProt. (2) The 13-relation ontology covers 73.5% of triples; domain-specific relationships in specialized fields may require ontology expansion. (3) Multi-pass extraction requires four LLM calls per abstract, approximately quadrupling computational cost. (4) Only abstracts are processed; full-text articles would increase coverage of methods, results, and supplementary data. (5) The bimodal stability distribution suggests the Jaccard metric functions better as a relevance filter than a confidence measure, warranting further investigation.
 
 ---
 
-## 5. Conclusion
+## 6. Conclusion
 
-NEKO 2.0 transforms scientific knowledge mining from untyped association networks to semantically rich, typed, directed knowledge graphs with grounded, citation-backed answers. Key results: multi-pass extraction increases recall by 170.6%, a 13-relation controlled ontology covers 73.5% of triples, and anti-hallucination answer generation produces specific, PMID-traceable metrics. The system uses free-tier cloud LLM providers (Groq, Cerebras) with multi-provider fallback, making it accessible without GPU resources.
+We present KGMiner, a pipeline for constructing typed, directed knowledge graphs from scientific literature using LLM-based ontology-constrained extraction. Multi-pass extraction with progressive refinement increases recall by 170.6% over single-pass approaches, with each pass contributing meaningfully. A 13-relation controlled vocabulary with post-extraction normalization covers 73.5% of extracted triples. Graph-RAG querying with anti-hallucination answer generation produces specific, citation-backed responses traceable to source PMIDs. The system uses free-tier cloud LLM providers with multi-provider fallback, making it accessible without dedicated GPU resources.
 
 Code: https://github.com/Up14/Knowledge
 
