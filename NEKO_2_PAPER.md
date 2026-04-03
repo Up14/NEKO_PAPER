@@ -270,7 +270,8 @@ Following the evaluation approach of the original NEKO paper, we use:
 
 ### 6.1 Query Generation Comparison
 
-**[Figure 3: TODO: SCREENSHOT -- (a) NEKO single keyword query "rhodococcus" with retmax=300. (b) NEKO 2.0 concept extraction JSON + 4 generated queries for "Study on improving beta-carotene production in microorganisms"]**
+![Figure 1: Pipeline Comparison](figures/fig1_pipeline_comparison.png)
+*Figure 1: Pipeline comparison between (a) original NEKO and (b) NEKO 2.0. Green = new component, Blue = replaced component, Orange = original.*
 
 For the beta-carotene production case study, NEKO 2.0 automatically decomposed the research goal into structured concepts: compound=["beta-carotene"], organism=["microorganisms"], process=["improving production", "enhancing biosynthesis"]. From these concepts, it generated three complementary PubMed queries:
 
@@ -292,7 +293,8 @@ The four-tier query strategy retrieves articles by capturing papers that use dif
 
 ### 6.2 Extraction Quality Comparison
 
-**[Figure 4: TODO: SCREENSHOT -- (a) Open NEKO's `filterd_entity_carotene_network.html` (421 nodes, 431 edges, undirected, unlabeled). (b) Open NEKO 2.0's knowledge graph from `/api/goals/306f70a7.../graph` (2,996 entities, 4,722 triples, directed, typed). Screenshot both.]**
+![Figure: Comparison Overview](figures/fig_comparison_overview.png)
+*Figure 2: Quantitative comparison between NEKO (full PDFs) and NEKO 2.0 (abstracts). Left: raw extraction volume (log scale). Center: quality and structure metrics. Right: graph capabilities.*
 
 We compared extraction results from the original NEKO (Yarrowia PDF processing with Qwen1.5-14B, 234 PDFs containing full paper text) against NEKO 2.0 (PubMed abstracts only, 226 articles on beta-carotene production).
 
@@ -311,7 +313,8 @@ We compared extraction results from the original NEKO (Yarrowia PDF processing w
 | Confidence scoring | None | Jaccard stability score per article | **New capability** |
 | Stability > 0.5 | N/A | 54.4% (123 of 226) | Majority are high-confidence |
 
-**[Figure 5: TODO: CREATE HISTOGRAM from stability data below]**
+![Figure 5: Stability Histogram](figures/fig5_stability_histogram.png)
+*Figure 3: Distribution of Jaccard stability scores across 226 articles. Red: 103 productive articles (all triples). Green: 123 articles with no extractable relationships.*
 
 **Stability Score Analysis (critical finding):** The stability score distribution reveals an important pattern about extraction behavior:
 
@@ -332,7 +335,8 @@ The critical quality difference is also visible in entity cleanliness. The origi
 
 ### 6.3 Relation Type Distribution
 
-**[Figure 6: TODO: CREATE BAR CHART from the data below -- horizontal bar chart sorted by count]**
+![Figure 6: Relation Distribution](figures/fig6_relation_distribution.png)
+*Figure 4: Relation type distribution across 4,722 extracted triples. The 13 canonical ontology relations cover 73.5% of all triples.*
 
 From the 4,722 triples extracted in the beta-carotene case study, the relation type distribution is:
 
@@ -359,7 +363,8 @@ The `has_metric` relation is the most frequent canonical type (598 triples, 12.7
 
 ### 6.4 Normalization Impact
 
-**[Figure 7: TODO: SCREENSHOT -- show a before/after example from the actual run data. Take 3-4 entity names from the similar_phrases mapping output.]**
+![Figure 7: Entity Normalization](figures/fig7_entity_normalization.png)
+*Figure 5: Entity normalization example. Before: 9 separate entity nodes across 3 synonym groups. After: 3 canonical nodes using the longest (most descriptive) name.*
 
 | Normalization Step | Effect |
 |---|---|
@@ -400,7 +405,8 @@ Note: The relation normalization results are confirmed from the actual run: 525 
 
 The query history from the completed beta-carotene run shows three real queries and their answers. For example, the query "How we can increase beta carotene production" returned an answer citing specific quantitative findings from the knowledge graph: 11.3-fold increase via hydroxylase overexpression, 107.3% increase via gene deletions, 78.9% reduction in H2O2, 0.165 g/L/h specific productivity, 142 mg/L highest yield, and 107.22 mg/L titer -- all traceable to extracted triples from the 2,996-entity, 4,722-relationship knowledge graph.
 
-**[Figure 9: TODO: SCREENSHOT -- (a) Run NEKO Module 2 with `search_network(G, "carotene", depth=1)` then summarize -- screenshot the generic LLM output. (b) Screenshot the NEKO 2.0 answer for "How we can increase beta carotene production" from the web UI, showing inline citations and specific metrics.]**
+![Figure: Triples Distribution](figures/fig_triples_distribution.png)
+*Figure 6: Distribution of triples per productive article (103 articles with triples). Mean: 45.0, showing high variance in extraction density across articles.*
 
 ### 6.7 Ablation Study
 
@@ -425,7 +431,8 @@ The full NEKO 2.0 pipeline produced 4,722 triples from 226 articles. To measure 
 
 Every pass contributes meaningfully. Pass 2 adds 35.3% of the total by re-scanning with awareness of what was already found -- this is the most effective follow-up pass. Pass 3 adds another 18.9% through targeted gap-filling. Single-pass extraction (316 triples) misses 63% of the relationships that multi-pass captures (855 triples).
 
-**[Figure 10: TODO: CREATE GROUPED BAR CHART -- for each of the 15 articles, show single-pass count vs multi-pass count side by side. Data in ablation_results.csv]**
+![Figure 10: Ablation Results](figures/fig10_ablation_results.png)
+*Figure 7: Ablation study results. Left: per-article triple counts for single-pass (red) vs multi-pass (blue) vs original run (green). Right: per-pass contribution breakdown showing Pass 1 (45.7%), Pass 2 (35.3%), and Pass 3 (18.9%).*
 
 ### Other Component Contributions (from completed run data)
 
@@ -542,30 +549,20 @@ Xiao, Z., Pakrasi, H.B., Chen, Y., Tang, Y.J. (2025). Network for Knowledge Orga
 
 ---
 
-## Figures Required (TODO: Create all after running code)
+## List of Figures
 
-### Figures that need to be DRAWN/DESIGNED (diagrams):
+All figures are in the `figures/` directory and are referenced inline throughout the paper.
 
-**Figure 1.** [TODO: DRAW] Architecture comparison diagram. (a) Original NEKO pipeline: manual keyword -> PubMed search -> single-pass untyped pair extraction -> undirected graph -> keyword search -> generic summary. (b) NEKO 2.0 pipeline: research goal -> LLM concept decomposition -> 4-tier PubMed search -> relevance filtering -> sentence-boundary chunking -> 3-pass typed triple extraction with validation -> relation and entity normalization -> directed multigraph -> semantic Graph-RAG search -> anti-hallucination grounded answers. Use green boxes for new components, orange for enhanced. Tool: draw.io, Figma, or PowerPoint.
+| Figure | File | Description |
+|---|---|---|
+| Figure 1 | `fig1_pipeline_comparison.png` | Pipeline comparison: NEKO (7 steps) vs NEKO 2.0 (9 steps, all new/replaced) |
+| Figure 2 | `fig_comparison_overview.png` | Quantitative comparison: extraction volume, quality metrics, graph capabilities |
+| Figure 3 | `fig5_stability_histogram.png` | Bimodal stability score distribution (103 productive vs 123 empty articles) |
+| Figure 4 | `fig6_relation_distribution.png` | Relation type distribution across 4,722 triples (13 canonical types) |
+| Figure 5 | `fig7_entity_normalization.png` | Entity normalization before/after example (longer-name canonicalization) |
+| Figure 6 | `fig_triples_distribution.png` | Triples per productive article distribution (mean 45.0) |
+| Figure 7 | `fig10_ablation_results.png` | Ablation: single-pass (316) vs multi-pass (855), per-pass contribution pie |
 
-**Figure 2.** [TODO: DRAW] Component comparison flow. Can use Table 1 from the text as a visual table figure, or convert into a side-by-side flow diagram.
-
-### Figures that need SCREENSHOTS from running code:
-
-**Figure 3.** [TODO: SCREENSHOT] Query generation comparison. (a) Run NEKO Module 1 notebook with keyword "rhodococcus" -- screenshot the PubMed search cell output showing article count. (b) Run NEKO 2.0 with goal "lipid production in Rhodococcus" -- screenshot the concept extraction JSON and 4 generated queries from the logs, plus article count.
-
-**Figure 4.** [TODO: SCREENSHOT] Knowledge graph comparison. (a) Open the NEKO output HTML graph file in browser -- screenshot showing undirected, unlabeled edges. (b) Open the NEKO 2.0 graph from `/api/goals/{id}/graph` or the Pyvis HTML output -- screenshot showing directed, colored edges with relation types. Both should be on the same topic.
-
-**Figure 7.** [TODO: SCREENSHOT] Entity normalization before/after. From the NEKO 2.0 pipeline logs, find 3-4 examples where entities were merged. Show the `similar_phrases` dict entries. Can be formatted as a simple table figure.
-
-**Figure 8.** [TODO: SCREENSHOT] Same as Figure 4 but zoomed into a specific subgraph region to clearly show edge labels, direction arrows, and PMID annotations.
-
-**Figure 9.** [TODO: SCREENSHOT] Query answering comparison. Ask both systems: "What genes are important for lipid production in Rhodococcus?" (a) NEKO Module 2: run `search_network(G, "lipid", depth=1)` then summarize -- screenshot the LLM summary output. (b) NEKO 2.0: use the web UI or `/api/goals/{id}/query` -- screenshot the answer showing inline citations.
-
-### Figures that need to be GENERATED from data (charts):
-
-**Figure 5.** [TODO: GENERATE CHART] Stability score histogram. From NEKO 2.0 output Excel, read "Stability Score Q2" column with pandas: `df['Stability Score Q2'].hist(bins=10)`. Save as PNG.
-
-**Figure 6.** [TODO: GENERATE CHART] Relation type bar chart. From NEKO 2.0 output Excel, extract all relations with regex, count per type: `df['Answer to Question 2'].str.extractall(r'\(([^,]+?),\s*([^,]+?),\s*([^\)]+?)\)')[1].value_counts().plot.barh()`. Save as PNG.
-
-**Figure 10.** [TODO: GENERATE CHART] Ablation bar chart. After running all ablation experiments, plot unique triple count per variant as grouped bar chart. Requires all ablation runs to be complete first.
+**[TODO: SCREENSHOTS still needed from running systems]**
+- Knowledge graph visualization: Open NEKO's `filterd_entity_carotene_network.html` and NEKO 2.0's graph side by side
+- Query answering comparison: Same question answered by both systems
