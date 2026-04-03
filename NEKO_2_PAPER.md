@@ -408,6 +408,12 @@ The query history from the completed beta-carotene run shows three real queries 
 ![Figure: Triples Distribution](figures/fig_triples_distribution.png)
 *Figure 6: Distribution of triples per productive article (103 articles with triples). Mean: 45.0, showing high variance in extraction density across articles.*
 
+![Figure 9: Query Comparison](figures/fig9_query_comparison.png)
+*Figure 8: Side-by-side query answering comparison for "How we can increase beta carotene production". Left: NEKO original (keyword search on 421 node names, generic LLM summary). Right: NEKO 2.0 (semantic search on 4,722 typed triples, grounded answer with specific metrics).*
+
+![Figure 9b: Key Differences](figures/fig9b_query_differences_table.png)
+*Figure 9: Key differences in query answering between NEKO and NEKO 2.0. NEKO 2.0 provides typed relationships, structured metrics, PMID citations, and anti-hallucination guardrails.*
+
 ### 6.7 Ablation Study
 
 The full NEKO 2.0 pipeline produced 4,722 triples from 226 articles. To measure the contribution of each pipeline component, we ran ablation experiments on a sample of 15 productive articles (articles that had triples in the original run).
@@ -562,7 +568,8 @@ All figures are in the `figures/` directory and are referenced inline throughout
 | Figure 5 | `fig7_entity_normalization.png` | Entity normalization before/after example (longer-name canonicalization) |
 | Figure 6 | `fig_triples_distribution.png` | Triples per productive article distribution (mean 45.0) |
 | Figure 7 | `fig10_ablation_results.png` | Ablation: single-pass (316) vs multi-pass (855), per-pass contribution pie |
+| Figure 8 | `fig9_query_comparison.png` | Side-by-side query answers: NEKO (generic) vs NEKO 2.0 (grounded with metrics) |
+| Figure 9 | `fig9b_query_differences_table.png` | Key differences table: search method, input, citations, hallucination guard |
 
-**[TODO: SCREENSHOTS still needed from running systems]**
-- Knowledge graph visualization: Open NEKO's `filterd_entity_carotene_network.html` and NEKO 2.0's graph side by side
-- Query answering comparison: Same question answered by both systems
+**[TODO: 1 screenshot still needed]**
+- Knowledge graph HTML visualization: Open NEKO's `filterd_entity_carotene_network.html` and NEKO 2.0's graph side by side in browser
