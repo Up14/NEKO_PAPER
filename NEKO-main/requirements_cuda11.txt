@@ -1,0 +1,16 @@
+transformers==4.37.0
+accelerate
+tiktoken
+einops
+transformers_stream_generator==0.0.4
+scipy
+torch==1.13.1
+optimum
+auto-gptq
+openpyxl
+sentence_transformers
+pyvis
+biopython
+pandas
+openpyxl
+openai
