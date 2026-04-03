@@ -1,10 +1,10 @@
 # NEKO 2.0: Enhanced Scientific Knowledge Mining with Typed Relation Extraction, Multi-Pass Validation, and Graph-RAG Querying
 
-Upanshu Jain, Zhengyang Xiao, Yixin Chen, Yinjie J. Tang*
+[Authors]
 
-Department of Energy, Environment, and Chemical Engineering, Washington University in St. Louis, St. Louis, MO 63130, USA
+[Affiliation]
 
-*Corresponding author: yinjie.tang@wustl.edu
+[Corresponding author email]
 
 ---
 
