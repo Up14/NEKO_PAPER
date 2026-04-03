@@ -119,7 +119,7 @@ NEKO 2.0 fetches PubMed article IDs in batches of 10,000 with a safety cap of 10
 
 ### 4.3 Relevance Pre-Filtering
 
-Before sending abstracts to the LLM (the most time-consuming step), NEKO 2.0 applies a lightweight relevance filter. Keywords longer than three characters are extracted from the research goal, and abstracts that do not contain any of these keywords are removed from processing. This saves an estimated 15-30% of LLM API calls without losing relevant articles.
+Before sending abstracts to the LLM (the most time-consuming step), NEKO 2.0 applies a lightweight relevance filter. Keywords longer than three characters are extracted from the research goal, and abstracts that do not contain any of these keywords are removed from processing. [TODO: after running, check pipeline logs which print before/after counts for relevance filtering. Report actual percentage saved.]
 
 ### 4.4 Sentence-Boundary Abstract Chunking
 
@@ -270,67 +270,73 @@ Following the evaluation approach of the original NEKO paper, we use:
 
 ### 6.1 Query Generation Comparison
 
-**[Figure 3: Comparison of search strategies]**
+**[Figure 3: Comparison of search strategies -- TODO: SCREENSHOT of NEKO single keyword vs NEKO 2.0 four-tier query output]**
 
 | Metric | NEKO | NEKO 2.0 |
 |---|---|---|
 | Search queries generated | 1 (manual) | 4 (automatic) |
-| Articles retrieved | ~200-300 | ~400-1500 (varies by topic) |
-| Unique articles after dedup | ~200-300 | ~350-1200 |
-| Relevance filtering | None | 15-30% removed as irrelevant |
-| Articles sent to LLM | ~200-300 | ~250-900 |
+| Articles retrieved | [TODO: RUN NEKO on "rhodococcus" keyword, record count] | [TODO: RUN NEKO 2.0 on "lipid production in Rhodococcus", record count] |
+| Unique articles after dedup | [TODO: same as above for NEKO] | [TODO: record unique count after set() dedup across 4 queries] |
+| Relevance filtering | None | [TODO: record % removed by relevance pre-filter, log shows before/after counts] |
+| Articles sent to LLM | [TODO: same as retrieved for NEKO] | [TODO: record count after relevance filtering] |
+
+**[TODO: RUN BOTH SYSTEMS on same topic. The pipeline logs print article counts at each stage. Capture these numbers.]**
 
 The four-tier query strategy retrieves substantially more unique articles by capturing papers that use different terminology for the same concepts. The relevance pre-filter prevents this broader retrieval from wasting LLM processing time on irrelevant articles.
 
 ### 6.2 Extraction Quality Comparison
 
-**[Figure 4: Knowledge graph comparison -- NEKO (untyped, undirected) vs. NEKO 2.0 (typed, directed)]**
+**[Figure 4: TODO: SCREENSHOT -- side-by-side knowledge graphs. Run NEKO on same keyword, screenshot its HTML graph. Run NEKO 2.0, screenshot its graph. Show untyped/undirected vs typed/directed.]**
 
 | Metric | NEKO | NEKO 2.0 | Change |
 |---|---|---|---|
 | Extraction format | (Entity A, Entity B) | (Subject, Relation, Object) | Typed |
 | Relationship types captured | 1 (untyped) | Up to 13 distinct types | +12 types |
 | Extraction passes per abstract | 1 | 3 + validation | +3 passes |
-| Triples per abstract (average) | ~3-5 pairs | ~8-15 triples | ~2-3x more |
-| Unique entities extracted | Baseline | ~40-60% more | Significant increase |
-| Gene targets identified | Baseline | ~2-3x more | Multi-pass catches more |
-| has_metric triples (quantitative data) | 0 (embedded in entity names) | Separated | New capability |
-| Articles with stability score > 0.5 | N/A | ~70-80% | Majority are reliable |
+| Triples per abstract (average) | [TODO: RUN NEKO, count total pairs / total articles from output Excel] | [TODO: RUN NEKO 2.0, count total triples / total articles from output Excel] | [TODO: compute ratio] |
+| Unique entities extracted | [TODO: count unique entities from NEKO Excel "Answer to Question 2" column] | [TODO: count unique entities from NEKO 2.0 Excel] | [TODO: compute % increase] |
+| Gene targets identified | [TODO: manually count gene names in NEKO output] | [TODO: manually count gene names in NEKO 2.0 output] | [TODO: compute ratio] |
+| has_metric triples (quantitative data) | 0 (embedded in entity names) | [TODO: grep for "has_metric" in NEKO 2.0 Excel, count occurrences] | New capability |
+| Articles with stability score > 0.5 | N/A | [TODO: from NEKO 2.0 Excel "Stability Score Q2" column, compute % above 0.5] | [TODO: fill] |
 
-**[Figure 5: Distribution of Jaccard stability scores across articles]**
+**[Figure 5: TODO: CREATE HISTOGRAM -- from NEKO 2.0 Excel "Stability Score Q2" column, plot distribution in bins 0.0-0.1, 0.1-0.2, ..., 0.9-1.0]**
 
-The multi-pass extraction consistently extracts more triples per abstract than single-pass extraction. The three passes contribute differently: Pass 1 captures the majority (~60-70%) of triples, Pass 2 adds ~15-25% overlooked relationships, and Pass 3 fills ~5-10% remaining gaps.
+**[TODO: To measure per-pass contribution, run NEKO 2.0 with logging enabled. The multi-pass code in Minning.py tracks triples per pass via set union. Add print statements to count |pass1_triples|, |pass2_new|, |pass3_new| and record percentages.]**
 
 ### 6.3 Relation Type Distribution
 
-**[Figure 6: Bar chart of relation type distribution in the Rhodococcus knowledge graph]**
+**[Figure 6: TODO: CREATE BAR CHART -- from NEKO 2.0 output Excel, extract all relation types from "Answer to Question 2" column using regex, count each type, plot as horizontal bar chart sorted by frequency]**
 
 | Relation Type | Percentage of Total Triples |
 |---|---|
-| activates | ~25% |
-| produces | ~20% |
-| has_metric | ~15% |
-| increases | ~10% |
-| inhibits | ~8% |
-| is_host_for | ~7% |
-| has_capability | ~5% |
-| is_a | ~4% |
-| encodes | ~3% |
-| decreases | ~2% |
-| integrated_in | ~1% |
+| activates | [TODO: count from Excel] |
+| produces | [TODO: count from Excel] |
+| has_metric | [TODO: count from Excel] |
+| increases | [TODO: count from Excel] |
+| inhibits | [TODO: count from Excel] |
+| is_host_for | [TODO: count from Excel] |
+| has_capability | [TODO: count from Excel] |
+| is_a | [TODO: count from Excel] |
+| encodes | [TODO: count from Excel] |
+| decreases | [TODO: count from Excel] |
+| integrated_in | [TODO: count from Excel] |
+| is_variant_of | [TODO: count from Excel] |
+| is_produced_by | [TODO: count from Excel] |
 
-The distribution shows that activation and production relationships dominate the metabolic engineering literature, which aligns with the domain's focus on enhancing biosynthetic pathways. The `has_metric` triples capture quantitative performance data that was previously lost or embedded in entity names.
+**[TODO: HOW TO GET THESE NUMBERS -- Run NEKO 2.0 on Rhodococcus topic. Open the output Excel file. From the "Answer to Question 2" column, use regex `\(([^,]+?),\s*([^,]+?),\s*([^\)]+?)\)` to extract all triples. Count the middle group (relation) for each canonical type. Compute percentages. The /api/goals/{id}/graph endpoint also returns relation_distribution in its JSON response.]**
+
+The distribution shows which relationship types dominate the metabolic engineering literature. The `has_metric` triples capture quantitative performance data that was previously lost or embedded in entity names.
 
 ### 6.4 Normalization Impact
 
-**[Figure 7: Entity normalization example -- before and after]**
+**[Figure 7: TODO: SCREENSHOT -- show a before/after example of entity normalization. Take 3-4 entity names from the raw LLM output that got merged (e.g., "R. opacus" + "Rhodococcus opacus" + "Rhodococcus opacus PD630" -> one canonical). Can be a simple text-based figure or table.]**
 
 | Normalization Step | Effect |
 |---|---|
-| Relation normalization | Reduced distinct relation terms from ~80+ LLM outputs to 13 canonical types |
-| Entity normalization (threshold 0.85) | Merged ~20-30% of entities as synonyms |
-| Transitive chain resolution | Resolved ~5-10% additional indirect synonym chains |
-| Longer-name canonical | Preserved full species names (e.g., "Rhodococcus opacus PD630" instead of "R. opacus") |
+| Relation normalization | [TODO: count distinct relation strings BEFORE normalization vs 13 AFTER. Run extraction without `apply_relation_normalization`, count unique relations, then run with it.] |
+| Entity normalization (threshold 0.85) | [TODO: from `find_similar_phrases()` output, count how many entities were in the mapping dict vs total unique entities. Compute merge percentage.] |
+| Transitive chain resolution | [TODO: in `apply_entity_normalization()`, count how many chains had length > 1 (A->B->C). Log these during the transitive resolution step.] |
+| Longer-name canonical | [TODO: show 3-4 concrete examples from the similar_phrases dict where the longer name was chosen. e.g., "R. opacus" -> "Rhodococcus opacus PD630"] |
 
 ### 6.5 Knowledge Graph Structure Comparison
 
@@ -343,7 +349,9 @@ The distribution shows that activation and production relationships dominate the
 | Multiple edges between same nodes | Not possible | Supported |
 | Causal direction preserved | No | Yes |
 | Edge provenance (PMID) | No | Yes |
-| Average node degree | ~3-5 | ~5-10 (more connections due to typed edges) |
+| Total nodes | [TODO: from NEKO graph, `len(G.nodes())`] | [TODO: from NEKO 2.0 graph, `len(G.nodes())`] |
+| Total edges | [TODO: from NEKO graph, `len(G.edges())`] | [TODO: from NEKO 2.0 graph, `len(G.edges())`] |
+| Average node degree | [TODO: `sum(dict(G.degree()).values()) / len(G.nodes())`] | [TODO: same for NEKO 2.0 graph] |
 
 ### 6.6 Search and Answer Quality
 
@@ -356,36 +364,46 @@ The distribution shows that activation and production relationships dominate the
 | Answer grounding | Generic summary from node names | Every claim cites specific (S, R, O) triple with PMID |
 | Answer hallucination risk | High (no guardrails) | Low (8-rule anti-hallucination system) |
 | Follow-up questions | Not supported | Chat history maintained |
-| Citation traceability | 0% (no inline citations) | ~90%+ claims traceable to source papers |
+| Citation traceability | 0% (no inline citations) | [TODO: ask NEKO 2.0 a query, count sentences with PMID citations vs total sentences in answer. Compute %.] |
+
+**[TODO: SCREENSHOT -- ask the SAME question to both systems. For NEKO: use Module 2 search_network("lipid", depth=1) then summarize. For NEKO 2.0: use the /api/goals/{id}/query endpoint. Screenshot both answers side by side showing the difference in citation quality.]**
 
 ### 6.7 Ablation Study
+
+**[TODO: THIS ENTIRE SECTION REQUIRES RUNNING MULTIPLE EXPERIMENTS]**
 
 To measure the contribution of each improvement, we ran NEKO 2.0 with individual components removed:
 
 | Variant | Unique Triples | Relation Types | Stability Score (mean) |
 |---|---|---|---|
-| NEKO 2.0 (full) | Baseline | 13 | 0.65 |
-| Without multi-pass (single pass only) | -35% | 13 | N/A |
-| Without relation normalization | Same count | ~80+ (fragmented) | 0.65 |
-| Without entity normalization improvements | +15% duplicates | 13 | 0.65 |
-| Without 4-tier queries (single keyword) | -40% articles | 13 | 0.65 |
-| Without relevance pre-filter | Same (but 25% more LLM cost) | 13 | 0.60 (more noise) |
-| Without has_metric separation | -15% (metrics embedded in entities) | 12 | 0.65 |
+| NEKO 2.0 (full) | [TODO: run full pipeline, count] | 13 | [TODO: mean of "Stability Score Q2" column] |
+| Without multi-pass (single pass only) | [TODO: modify `ask_llm_with_fallback` to skip passes 2,3 by setting `multi_pass=False`, run, count] | 13 | N/A |
+| Without relation normalization | [TODO: skip `apply_relation_normalization` call in pipeline, count unique relation strings] | [TODO: count distinct relation strings without normalization] | [TODO: same stability] |
+| Without entity normalization improvements | [TODO: run with threshold=0.80 and first-seen canonical (original NEKO logic), count entities] | 13 | [TODO: same stability] |
+| Without 4-tier queries (single keyword) | [TODO: bypass `generate_search_queries`, use single `keyword[Abstract]` query, count articles and triples] | 13 | [TODO: compute] |
+| Without relevance pre-filter | [TODO: skip the keyword presence filter, count total LLM calls vs filtered version] | 13 | [TODO: compute -- may be lower due to noise] |
+| Without has_metric separation | [TODO: remove has_metric rules from extraction prompt, run, count] | 12 | [TODO: compute] |
 
-The multi-pass extraction and four-tier query strategy provide the largest individual improvements. Relation normalization does not change triple count but is essential for graph usability. Entity normalization improvements primarily reduce duplicates and improve graph quality.
+**[Figure 10: TODO: CREATE BAR CHART from ablation results -- show unique triple count for each variant as grouped bars]**
+
+**[TODO: HOW TO RUN ABLATIONS -- each ablation requires modifying one part of the code and re-running the full pipeline on the same dataset. Estimated time: ~6-8 runs x pipeline duration. Can be parallelized if using different goal_ids. Save each Excel output separately for comparison.]**
 
 ### 6.8 Comparison with GPT-4 Zero-Shot
+
+**[TODO: THIS REQUIRES RUNNING GPT-4 AND BOTH NEKO VERSIONS ON SAME TOPIC]**
 
 Following the original NEKO paper's comparison methodology, we asked GPT-4 the same research questions without literature retrieval:
 
 | Metric | GPT-4 Zero-Shot | NEKO (Original) | NEKO 2.0 |
 |---|---|---|---|
-| Gene targets mentioned | Baseline | ~3x more | ~5-6x more |
-| Engineering strategies | Baseline | ~3x more | ~5-6x more |
-| Quantitative metrics (titers, yields) | None | Embedded in text | Structured has_metric triples |
-| Sources cited | 0 | Paper titles on edges | Inline PMIDs in answers |
+| Gene targets mentioned | [TODO: ask GPT-4 "Summarize lipid production in Rhodococcus", count gene names] | [TODO: count gene names from NEKO output] | [TODO: count gene names from NEKO 2.0 output] |
+| Engineering strategies | [TODO: count strategies from GPT-4 answer] | [TODO: count from NEKO] | [TODO: count from NEKO 2.0] |
+| Quantitative metrics (titers, yields) | None | Embedded in text | [TODO: count has_metric triples from NEKO 2.0 Excel] |
+| Sources cited | 0 | Paper titles on edges | [TODO: count unique PMIDs in NEKO 2.0 answer] |
 | Relationship types | Implicit in text | 1 (untyped) | 13 (typed ontology) |
 | Answer grounding | None | Partial (from KG nodes) | Full (triple + PMID citations) |
+
+**[TODO: SCREENSHOT -- GPT-4 zero-shot answer vs NEKO 2.0 grounded answer for the same question, side by side]**
 
 ---
 
@@ -399,9 +417,9 @@ The `has_metric` relation is particularly valuable for metabolic engineering res
 
 ### 7.2 Multi-Pass Extraction Effectiveness
 
-Our results show that single-pass extraction misses approximately 35% of the relationships that multi-pass extraction captures. This is consistent with the known tendency of LLMs to focus on the most prominent information in a text and overlook secondary details. Pass 2 (overlooked scan) is particularly effective because it benefits from knowing what was already found, allowing the model to focus specifically on gaps.
+Our results show that single-pass extraction misses approximately [TODO: fill from ablation study -- compute (full - single_pass) / full * 100]% of the relationships that multi-pass extraction captures. This is consistent with the known tendency of LLMs to focus on the most prominent information in a text and overlook secondary details. Pass 2 (overlooked scan) is particularly effective because it benefits from knowing what was already found, allowing the model to focus specifically on gaps.
 
-The Jaccard stability score provides a useful quality signal. Articles with stability scores below 0.3 often contain ambiguous or highly technical language where the LLM's interpretation is unreliable. These articles could be prioritized for manual review.
+The Jaccard stability score provides a useful quality signal. [TODO: after running the pipeline, analyze the "Stability Score Q2" column -- examine what stability scores correlate with (check low-score articles manually to see if they have ambiguous text). Write 1-2 sentences about what low vs high scores mean in practice.]
 
 ### 7.3 Graph-RAG vs. Keyword Search
 
@@ -467,24 +485,30 @@ Xiao, Z., Pakrasi, H.B., Chen, Y., Tang, Y.J. (2025). Network for Knowledge Orga
 
 ---
 
-## Figure Captions (for figures to be created)
+## Figures Required (TODO: Create all after running code)
 
-**Figure 1.** Overview of NEKO 2.0 improvements. (a) Original NEKO pipeline: manual keyword -> PubMed search -> single-pass untyped pair extraction -> undirected graph -> keyword search -> generic summary. (b) NEKO 2.0 pipeline: research goal -> LLM concept decomposition -> 4-tier PubMed search -> relevance filtering -> sentence-boundary chunking -> 3-pass typed triple extraction with validation -> relation and entity normalization -> directed multigraph -> semantic Graph-RAG search -> anti-hallucination grounded answers. Green boxes indicate new components. Orange boxes indicate enhanced components.
+### Figures that need to be DRAWN/DESIGNED (diagrams):
 
-**Figure 2.** Component-by-component comparison table (see Table 1 in text).
+**Figure 1.** [TODO: DRAW] Architecture comparison diagram. (a) Original NEKO pipeline: manual keyword -> PubMed search -> single-pass untyped pair extraction -> undirected graph -> keyword search -> generic summary. (b) NEKO 2.0 pipeline: research goal -> LLM concept decomposition -> 4-tier PubMed search -> relevance filtering -> sentence-boundary chunking -> 3-pass typed triple extraction with validation -> relation and entity normalization -> directed multigraph -> semantic Graph-RAG search -> anti-hallucination grounded answers. Use green boxes for new components, orange for enhanced. Tool: draw.io, Figma, or PowerPoint.
 
-**Figure 3.** Query generation comparison. (a) NEKO: single manual keyword "rhodococcus" retrieves ~300 articles. (b) NEKO 2.0: LLM decomposes "lipid production in Rhodococcus" into structured concepts, generates 4 complementary queries, retrieves ~800 unique articles after deduplication and relevance filtering.
+**Figure 2.** [TODO: DRAW] Component comparison flow. Can use Table 1 from the text as a visual table figure, or convert into a side-by-side flow diagram.
 
-**Figure 4.** Knowledge graph comparison for Rhodococcus research. (a) NEKO: undirected graph with unlabeled edges showing entity associations. (b) NEKO 2.0: directed graph with colored edges indicating relationship types (red=inhibits, green=activates, blue=produces, gray=has_metric). Edge labels show the relationship type.
+### Figures that need SCREENSHOTS from running code:
 
-**Figure 5.** Distribution of Jaccard stability scores across articles in the Rhodococcus case study. Histogram showing the percentage of articles in each score bin (0.0-0.1, 0.1-0.2, ..., 0.9-1.0).
+**Figure 3.** [TODO: SCREENSHOT] Query generation comparison. (a) Run NEKO Module 1 notebook with keyword "rhodococcus" -- screenshot the PubMed search cell output showing article count. (b) Run NEKO 2.0 with goal "lipid production in Rhodococcus" -- screenshot the concept extraction JSON and 4 generated queries from the logs, plus article count.
 
-**Figure 6.** Relation type distribution in the Rhodococcus knowledge graph. Bar chart showing the percentage of total triples for each of the 13 relation types.
+**Figure 4.** [TODO: SCREENSHOT] Knowledge graph comparison. (a) Open the NEKO output HTML graph file in browser -- screenshot showing undirected, unlabeled edges. (b) Open the NEKO 2.0 graph from `/api/goals/{id}/graph` or the Pyvis HTML output -- screenshot showing directed, colored edges with relation types. Both should be on the same topic.
 
-**Figure 7.** Entity normalization example. (a) Before: "R. opacus", "Rhodococcus opacus", and "Rhodococcus opacus PD630" appear as three separate nodes. (b) After: all three are merged into "Rhodococcus opacus PD630" (longest name as canonical), with transitive chain resolution.
+**Figure 7.** [TODO: SCREENSHOT] Entity normalization before/after. From the NEKO 2.0 pipeline logs, find 3-4 examples where entities were merged. Show the `similar_phrases` dict entries. Can be formatted as a simple table figure.
 
-**Figure 8.** Side-by-side knowledge graph visualization. (a) NEKO: undirected, unlabeled. (b) NEKO 2.0: directed, with colored edges by relation type and PMID-linked provenance.
+**Figure 8.** [TODO: SCREENSHOT] Same as Figure 4 but zoomed into a specific subgraph region to clearly show edge labels, direction arrows, and PMID annotations.
 
-**Figure 9.** Query answering comparison. Same question "What genes are important for lipid production in Rhodococcus?" answered by: (a) NEKO -- generic summary from node names without citations. (b) NEKO 2.0 -- structured answer with inline triple citations and PMIDs, organized by relationship type.
+**Figure 9.** [TODO: SCREENSHOT] Query answering comparison. Ask both systems: "What genes are important for lipid production in Rhodococcus?" (a) NEKO Module 2: run `search_network(G, "lipid", depth=1)` then summarize -- screenshot the LLM summary output. (b) NEKO 2.0: use the web UI or `/api/goals/{id}/query` -- screenshot the answer showing inline citations.
 
-**Figure 10.** Ablation study results. Bar chart showing the impact of removing each individual improvement on total unique triples extracted.
+### Figures that need to be GENERATED from data (charts):
+
+**Figure 5.** [TODO: GENERATE CHART] Stability score histogram. From NEKO 2.0 output Excel, read "Stability Score Q2" column with pandas: `df['Stability Score Q2'].hist(bins=10)`. Save as PNG.
+
+**Figure 6.** [TODO: GENERATE CHART] Relation type bar chart. From NEKO 2.0 output Excel, extract all relations with regex, count per type: `df['Answer to Question 2'].str.extractall(r'\(([^,]+?),\s*([^,]+?),\s*([^\)]+?)\)')[1].value_counts().plot.barh()`. Save as PNG.
+
+**Figure 10.** [TODO: GENERATE CHART] Ablation bar chart. After running all ablation experiments, plot unique triple count per variant as grouped bar chart. Requires all ablation runs to be complete first.
