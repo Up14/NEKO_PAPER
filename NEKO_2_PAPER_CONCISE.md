@@ -301,18 +301,18 @@ Code: https://github.com/Up14/Knowledge
 
 ## References
 
-[1] Bolton, E., Hall, D., Yasunaga, M., Lee, T., Manning, C.D., and Liang, P. (2024). BioMedLM: A 2.7B parameter language model trained on biomedical text. *arXiv preprint arXiv:2403.18421*.
+[1] Bolton, E., Hall, D., Yasunaga, M., Lee, T., Manning, C.D., and Liang, P. (2024). BioMedLM: A 2.7B parameter language model trained on biomedical text. arXiv preprint arXiv:2403.18421.
 
-[2] Edge, D., Trinh, H., Cheng, N., Bradley, J., Chao, A., Mody, A., Truitt, S., and Larson, J. (2024). From Local to Global: A Graph RAG Approach to Query-Focused Summarization. *arXiv preprint arXiv:2404.16130*.
+[2] Edge, D., Trinh, H., Cheng, N., Bradley, J., Chao, A., Mody, A., Truitt, S., and Larson, J. (2024). From Local to Global: A Graph RAG Approach to Query-Focused Summarization. arXiv preprint arXiv:2404.16130.
 
-[3] Kim, D., Lee, J., So, C.H., Jeon, H., Jeong, M., Choi, Y., Yoon, W., Sung, M., and Kang, J. (2022). BERN2: An advanced neural biomedical named entity recognition and normalization tool. *Bioinformatics*, 38(20), 4837-4839.
+[3] Kim, D., Lee, J., So, C.H., Jeon, H., Jeong, M., Choi, Y., Yoon, W., Sung, M., and Kang, J. (2022). BERN2: An advanced neural biomedical named entity recognition and normalization tool. Bioinformatics, 38(20), 4837-4839.
 
-[4] Lewis, P., Perez, E., Piktus, A., Petroni, F., Karpukhin, V., Goyal, N., Kuttler, H., Lewis, M., Yih, W., Rocktaschel, T., Riedel, S., and Kiela, D. (2020). Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks. *Advances in Neural Information Processing Systems (NeurIPS)*, 33, 9459-9474.
+[4] Lewis, P., Perez, E., Piktus, A., Petroni, F., Karpukhin, V., Goyal, N., Kuttler, H., Lewis, M., Yih, W., Rocktaschel, T., Riedel, S., and Kiela, D. (2020). Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks. Advances in Neural Information Processing Systems (NeurIPS), 33, 9459-9474.
 
-[5] Luo, R., Sun, L., Xia, Y., Qin, T., Zhang, S., Poon, H., and Liu, T.Y. (2022). BioGPT: Generative pre-trained transformer for biomedical text generation and mining. *Briefings in Bioinformatics*, 23(6), bbac409.
+[5] Luo, R., Sun, L., Xia, Y., Qin, T., Zhang, S., Poon, H., and Liu, T.Y. (2022). BioGPT: Generative pre-trained transformer for biomedical text generation and mining. Briefings in Bioinformatics, 23(6), bbac409.
 
-[6] Wadhwa, S., Amir, S., and Wallace, B.C. (2023). Revisiting Relation Extraction in the era of Large Language Models. *Proceedings of the 61st Annual Meeting of the Association for Computational Linguistics (ACL)*, 15566-15589.
+[6] Wadhwa, S., Amir, S., and Wallace, B.C. (2023). Revisiting Relation Extraction in the era of Large Language Models. Proceedings of the 61st Annual Meeting of the Association for Computational Linguistics (ACL), 15566-15589.
 
-[7] Wei, C.H., Allot, A., Leaman, R., and Lu, Z. (2024). PubTator 3.0: an AI-powered literature resource for unlocking biomedical knowledge. *Nucleic Acids Research*, 52(W1), W265-W270.
+[7] Wei, C.H., Allot, A., Leaman, R., and Lu, Z. (2024). PubTator 3.0: an AI-powered literature resource for unlocking biomedical knowledge. Nucleic Acids Research, 52(W1), W265-W270.
 
-[8] Xiao, Z., Pakrasi, H.B., Chen, Y., and Tang, Y.J. (2025). Network for Knowledge Organization (NEKO): An AI knowledge mining workflow for synthetic biology research. *Metabolic Engineering*, 87, 60-67.
+[8] Xiao, Z., Pakrasi, H.B., Chen, Y., and Tang, Y.J. (2025). Network for Knowledge Organization (NEKO): An AI knowledge mining workflow for synthetic biology research. Metabolic Engineering, 87, 60-67.
