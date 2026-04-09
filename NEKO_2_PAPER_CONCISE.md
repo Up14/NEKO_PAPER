@@ -40,7 +40,7 @@ In this work, we present KGMiner, a pipeline that addresses these challenges thr
 
 General-purpose scientific tools such as Elicit, Semantic Scholar, and Consensus use language models to search and summarize literature, but produce text summaries rather than structured knowledge representations. Domain-specific models including BioGPT (Luo et al., 2022) and BioMedLM (Bolton et al., 2024) are pre-trained on biomedical text but face hallucination issues when generating answers without grounding in specific retrieved documents.
 
-NEKO (Xiao et al., 2025) combined PubMed search with LLM-based extraction to build knowledge graphs from scientific abstracts. Their workflow extracted entity associations as untyped pairs and constructed undirected graphs visualized with Pyvis. While NEKO demonstrated the feasibility of LLM-driven knowledge graph construction for synthetic biology, several limitations remain: extracted relationships lack type labels (e.g., activation vs. inhibition), single-pass extraction limits recall, entity deduplication uses an arbitrary canonical selection strategy, and the keyword-based graph search requires users to know exact entity names. Our work addresses each of these limitations through ontology-constrained typed extraction, multi-pass refinement, improved normalization, and semantic Graph-RAG querying.
+NEKO (Xiao et al., 2025) combined PubMed search with LLM-based extraction to build knowledge graphs from scientific abstracts. Their workflow extracted entity associations as untyped pairs and constructed undirected graphs. While NEKO demonstrated the feasibility of LLM-driven knowledge graph construction for synthetic biology, several limitations remain: extracted relationships lack type labels (e.g., activation vs. inhibition), single-pass extraction limits recall, entity deduplication uses an arbitrary canonical selection strategy, and the keyword-based graph search requires users to know exact entity names.
 
 ### 2.2 Biomedical Knowledge Graph Construction
 
@@ -59,7 +59,7 @@ RAG combines retrieval systems with language models to ground outputs in specifi
 KGMiner operates as a six-stage pipeline (Figure 1): (1) automated query generation, (2) literature retrieval with relevance filtering, (3) ontology-constrained multi-pass triple extraction, (4) relation and entity normalization, (5) directed multigraph construction, and (6) Graph-RAG querying with anti-hallucination answer generation.
 
 ![Pipeline](figures/fig1_pipeline_comparison.png)
-*Figure 1. KGMiner pipeline overview. The system accepts a natural language research goal and produces a typed, directed knowledge graph with grounded query answering.*
+*Figure 1. KGMiner pipeline. The system accepts a natural language research goal and produces a typed, directed knowledge graph with grounded query answering.*
 
 ### 3.2 Automated Query Generation
 
@@ -129,8 +129,8 @@ Answer generation uses a strict evidence-grounding protocol: the LLM receives re
 
 We evaluated KGMiner on the research goal "improving beta-carotene production in microorganisms," retrieving 226 PubMed articles after automated query generation and relevance filtering.
 
-![Comparison](figures/fig_comparison_overview.png)
-*Figure 2. Extraction results summary showing quality metrics and graph capabilities.*
+![Results Summary](figures/fig2_results_summary.png)
+*Figure 2. KGMiner extraction results: 226 articles yielding 4,722 typed triples across 2,996 entities. The 13-relation ontology covers 73.5% of all triples.*
 
 | Metric | Value |
 |---|---|
@@ -143,26 +143,26 @@ We evaluated KGMiner on the research goal "improving beta-carotene production in
 | Productive articles (with triples) | 103 (45.6%) |
 | Avg triples per productive article | 45.0 |
 
-### 4.2 Relation Type Distribution
+### 4.2 Knowledge Graph Structure
 
-![Relations](figures/fig6_relation_distribution.png)
-*Figure 3. Distribution of relation types across 4,722 extracted triples.*
+![Graph Structure](figures/fig3_graph_structure.png)
+*Figure 3. Left: distribution of the 13 canonical relation types. Right: article productivity -- 103 articles produced all 4,722 triples; 123 articles contained no domain-relevant relationships.*
 
 The most frequent canonical relations are has_metric (598, 12.7%), is_a (543, 11.5%), has_capability (525, 11.1%), and produces (523, 11.1%). The 13 canonical types cover 73.5% of all triples. The remaining 26.5% use 512 non-canonical relation strings, indicating opportunities for ontology expansion.
 
 ### 4.3 Stability Score Analysis
 
 ![Stability](figures/fig5_stability_histogram.png)
-*Figure 4. Stability score distribution across 226 articles.*
+*Figure 4. Stability score distribution across 226 articles. Red: 103 productive articles. Green: 123 articles with no extractable relationships.*
 
-The Jaccard stability scores exhibit a strongly bimodal distribution: 123 articles (54.4%) scored 1.0 because both extraction and validation found no relationships (irrelevant articles), while 95 articles (42.0%) scored 0.0. All 4,722 triples originate from the 103 articles scoring below 1.0. The 0.0 scores on productive articles indicate that the extraction and validation passes capture complementary rather than identical relationships, with both contributions preserved via set union. This bimodal pattern suggests the stability metric functions as an effective relevance filter: articles scoring 1.0 can be automatically flagged as containing no domain-relevant relationships.
+The Jaccard stability scores exhibit a strongly bimodal distribution: 123 articles (54.4%) scored 1.0 because both extraction and validation found no relationships (irrelevant articles), while 95 articles (42.0%) scored 0.0. All 4,722 triples originate from the 103 articles scoring below 1.0, averaging 45.0 triples per productive article. The 0.0 scores indicate that the extraction and validation passes capture complementary rather than identical relationships, with both contributions preserved via set union. This bimodal pattern suggests the stability metric functions as an effective relevance filter: articles scoring 1.0 can be automatically flagged as containing no domain-relevant relationships.
 
 ### 4.4 Multi-Pass Ablation Study
 
 We conducted an ablation experiment on 15 productive articles using llama-3.3-70b:
 
 ![Ablation](figures/fig10_ablation_results.png)
-*Figure 5. Multi-pass ablation results. Left: per-article comparison. Right: per-pass contribution.*
+*Figure 5. Multi-pass ablation results. Left: per-article comparison of single-pass vs multi-pass. Right: contribution of each extraction pass.*
 
 | Extraction Mode | Total Triples | Avg per Article |
 |---|---|---|
@@ -176,7 +176,7 @@ Per-pass contributions: Pass 1 (exhaustive) 45.7%, Pass 2 (overlooked scan) 35.3
 
 To illustrate what KGMiner produces, we present representative outputs at each stage of the pipeline.
 
-**Stage 1: Extracted Triples.** For a single PubMed article (PMID: 20559754, "Strain-dependent carotenoid productions in metabolically engineered Escherichia coli"), the multi-pass extraction produced typed triples such as:
+**Extracted Triples.** For a single PubMed article (PMID: 20559754, "Strain-dependent carotenoid productions in metabolically engineered Escherichia coli"), the multi-pass extraction produced typed triples such as:
 
 | Subject | Relation | Object |
 |---|---|---|
@@ -188,7 +188,7 @@ To illustrate what KGMiner produces, we present representative outputs at each s
 
 Each triple carries the source PMID, enabling citation traceability.
 
-**Stage 2: Structured Quantitative Data.** The `has_metric` relation captures performance benchmarks as structured triples rather than embedding values in entity names. Examples from the case study:
+**Structured Quantitative Data.** The `has_metric` relation captures performance benchmarks as structured triples rather than embedding values in entity names:
 
 | Entity | Metric Value | Source PMID |
 |---|---|---|
@@ -199,9 +199,9 @@ Each triple carries the source PMID, enabling citation traceability.
 | vitamin E yield | 30.1 mg/L | 18633963 |
 | lutein content | 10 g/kg dry weight | 20811803 |
 
-These structured metrics enable cross-study performance comparison queries that would be impossible with untyped extraction.
+These structured metrics enable cross-study performance comparison queries.
 
-**Stage 3: Query Answer Output.** When queried with "How can we increase beta-carotene production?", KGMiner produced a structured report organized by strategy category:
+**Query Answer Output.** When queried with "How can we increase beta-carotene production?", KGMiner produced a structured report organized by strategy category:
 
 > **Metabolic Engineering:** Overexpression of all-trans-beta-carotene hydroxylase leads to an 11.3-fold increase. Gene deletions identified via multi-objective optimization yield 107.3% improvement over parent strain. [Sources: knowledge graph triples with PMIDs]
 >
@@ -211,14 +211,14 @@ These structured metrics enable cross-study performance comparison queries that 
 >
 > **Process Parameters:** Temperature control (30 vs 37 degrees C) and H2O2 content reduction (78.9% decrease) improve yields. Specific productivity reaches 0.165 g/L/h. [Source: PMID 15309430]
 
-The full answer spans 5,783 characters with six categories, each citing specific metrics traceable to source PMIDs. This contrasts with ungrounded LLM responses that provide generic advice without quantitative evidence.
+The full answer spans 5,783 characters with six categories, each citing specific metrics traceable to source PMIDs.
 
-### 4.6 Query Answering Comparison
+### 4.6 Query Answering Capabilities
 
-![Query Comparison](figures/fig9b_query_differences_table.png)
-*Figure 6. Comparison of query answering approaches: keyword-based with generic summary vs. Graph-RAG with anti-hallucination.*
+![Query Capabilities](figures/fig6_query_capabilities.png)
+*Figure 6. KGMiner query answering capabilities: typed relations, structured metrics, PMID citations, and anti-hallucination protocol.*
 
-To evaluate the impact of typed triples and anti-hallucination on answer quality, we compared KGMiner's Graph-RAG approach against a baseline approach using entity names without relationship types. The baseline produced generic recommendations with vague metrics (e.g., "up to 4-fold increase") untraceable to specific sources. KGMiner's answers cited specific values (11.3-fold, 107.22 mg/L, 142 mg/L) all traceable to extracted triples with PMIDs.
+KGMiner's Graph-RAG approach enables natural language queries against the knowledge graph. The semantic search retrieves the most relevant triples regardless of exact terminology, and the anti-hallucination protocol ensures every claim in the answer is traceable to specific extracted evidence. This produces answers with specific quantitative metrics (e.g., 11.3-fold increase, 107.22 mg/L, 142 mg/L) rather than generic advice.
 
 ---
 
