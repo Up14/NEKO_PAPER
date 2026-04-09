@@ -225,7 +225,24 @@ Each triple carries the source PMID, enabling citation traceability.
 
 These structured metrics enable cross-study performance comparison queries.
 
-**Query Answer Output.** When queried with "How can we increase beta-carotene production?", KGMiner produced a 5,783-character structured report. The complete system output is shown below, demonstrating the depth and specificity of grounded answers:
+**Semantic Search Results (Raw).** When queried with "How can we increase beta-carotene production?", the Graph-RAG engine retrieved the top-50 most relevant triples by cosine similarity. The top 10 raw results returned by the semantic search:
+
+| Rank | Score | Subject | Relation | Object | PMID |
+|---|---|---|---|---|---|
+| 1 | 0.871 | beta-carotene production | increased | -- | 35102143 |
+| 2 | 0.861 | new strategies | increases | beta-carotene production | 38607448 |
+| 3 | 0.851 | inexpensive carbon sources | enhance | beta-carotene production | 38607448 |
+| 4 | 0.833 | beta-carotene production | depends on | culture conditions | 33151382 |
+| 5 | 0.805 | metabolic engineering | improves | beta-carotene production | 38607448 |
+| 6 | 0.789 | research study | increases | beta-carotene production | 35419827 |
+| 7 | 0.782 | beta-carotene production | reaches | 142 mg/L | 34983533 |
+| 8 | 0.773 | beta-carotene production | has_metric | 11.3-fold increase | 31193511 |
+| 9 | 0.771 | carbon sources | affect | beta-carotene production | 38607448 |
+| 10 | 0.761 | optimized medium | increases | beta-carotene production | 31193511 |
+
+The 50 results span 23 unique source papers with 13 distinct relation types, providing comprehensive evidence for answer generation. These raw triples are then passed to the LLM with the anti-hallucination protocol.
+
+**Generated Answer (Full Output).** From these 50 triples, KGMiner produced a 5,783-character structured report:
 
 > **Metabolic Engineering.** Overexpression of all-trans-beta-carotene hydroxylase leads to an 11.3-fold increase in beta-carotene. Peroxisomal targeting of key enzymes enhances flux by compartmentalizing intermediates. Multi-objective optimization identified specific gene deletions that redirect metabolic flux, yielding 107.3% increase over the wild-type strain.
 >
