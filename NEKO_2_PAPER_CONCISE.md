@@ -125,7 +125,33 @@ Answer generation uses a strict evidence-grounding protocol: the LLM receives re
 
 ### 4.1 Case Study: Beta-Carotene Biosynthesis
 
-We evaluated KGMiner on the research goal "improving beta-carotene production in microorganisms," retrieving 226 PubMed articles after automated query generation and relevance filtering.
+We evaluated KGMiner on the research goal: **"Study on improving beta-carotene production in microorganisms"**.
+
+**Step 1: Automated Concept Extraction.** The LLM decomposed this goal into structured concepts:
+
+| Category | Extracted Concepts |
+|---|---|
+| Compound | beta-carotene |
+| Organism | microorganisms |
+| Process | improving production, enhancing biosynthesis |
+| Other | (none) |
+
+**Step 2: PubMed Query Generation.** From these concepts, three complementary queries were automatically generated:
+
+- Query 1 (Baseline): `beta-carotene AND microorganisms AND improving production`
+- Query 2 (Broad): `(beta-carotene[tiab]) AND (microorganisms[tiab])`
+- Query 3 (Specific): `(beta-carotene[tiab]) AND (microorganisms[tiab]) AND ("improving production"[tiab] OR "enhancing biosynthesis"[tiab])`
+
+**Step 3: Retrieval Pipeline.** The queries retrieved 228 unique PubMed IDs. After fetching article metadata, 227 had valid abstracts. The relevance pre-filter removed 1 article, leaving 226 articles for LLM processing.
+
+| Pipeline Stage | Count |
+|---|---|
+| PubMed IDs retrieved | 228 |
+| Articles with abstracts | 227 |
+| After relevance filtering | 226 |
+| Processed by LLM | 226 |
+
+**Step 4: Extraction Results.**
 
 ![Results Summary](figures/fig2_results_summary.png)
 *Figure 2. KGMiner extraction results: 226 articles yielding 4,722 typed triples across 2,996 entities. The 13-relation ontology covers 73.5% of all triples.*
