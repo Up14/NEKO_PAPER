@@ -65,11 +65,11 @@ KGMiner operates as a six-stage pipeline (Figure 1): (1) automated query generat
 
 The system accepts a natural language research goal (e.g., "improving beta-carotene production in microorganisms"). An LLM decomposes the goal into structured concept categories -- compound, organism, process, and constraints -- with synonyms for each category. From these concepts, complementary PubMed queries are constructed at multiple specificity levels, from broad (compound AND organism) to targeted (all concepts with field restrictions). Noise terms (e.g., "study", "review", "effect") are filtered from baseline queries. Both concepts and queries are cached using content-based hashing for reproducibility.
 
-Article retrieval uses the NCBI Entrez API with batched fetching, retry logic, and rate limiting. Articles with missing abstracts are filtered, and PubMed IDs (PMIDs) are stored for downstream citation tracing. A lightweight relevance pre-filter removes abstracts that do not contain any goal-derived keyword, reducing unnecessary LLM processing.
+Article retrieval uses the NCBI Entrez API, following the PubMed-based retrieval approach established in prior LLM knowledge mining workflows (Xiao et al., 2025), with added batched fetching, retry logic, and rate limiting. Articles with missing abstracts are filtered, and PubMed IDs (PMIDs) are stored for downstream citation tracing. A lightweight relevance pre-filter removes abstracts that do not contain any goal-derived keyword, reducing unnecessary LLM processing.
 
 ### 3.3 Ontology-Constrained Triple Extraction
 
-Each abstract is processed to extract typed triples in the format (Subject, Relation, Object), where the Relation is constrained to a controlled vocabulary of 13 biological relationship types (Table 1).
+Prior work demonstrated that LLMs can extract entity associations from scientific abstracts when prompted with domain-specific instructions (Xiao et al., 2025). KGMiner extends this approach by constraining extraction to produce typed triples in the format (Subject, Relation, Object), where the Relation must come from a controlled vocabulary of 13 biological relationship types (Table 1).
 
 | Relation | Description | Example |
 |---|---|---|
@@ -111,7 +111,7 @@ Validation triples are also merged into the final set regardless of agreement le
 
 **Relation normalization** maps 41 synonym terms to the 13 canonical relations using pre-compiled regular expressions sorted by length to prevent substring conflicts. For example, "induces", "enhances", "stimulates", "upregulates", and "promotes" all map to `activates`. After normalization, triples within each article are deduplicated using case-insensitive matching.
 
-**Entity normalization** uses `all-MiniLM-L6-v2` sentence embeddings (384 dimensions) to identify synonymous entities. Cosine similarity above 0.85 triggers merging. The canonical form is selected as the longer (more descriptive) entity name -- for example, "Escherichia coli K-12" is preferred over "E. coli". Transitive normalization chains (A&rarr;B, B&rarr;C) are resolved to direct mappings (A&rarr;C, B&rarr;C) with circular reference detection.
+**Entity normalization** builds on the embedding-based deduplication approach introduced by Xiao et al. (2025), which used `all-MiniLM-L6-v2` sentence embeddings with cosine similarity to merge synonymous entities. KGMiner improves this approach in three ways: (1) the similarity threshold is raised from 0.80 to 0.85 to reduce false merges between distinct biological entities; (2) the canonical form is selected as the longer (more descriptive) entity name rather than the first-seen entity -- for example, "Escherichia coli K-12" is preferred over "E. coli"; and (3) transitive normalization chains (A&rarr;B, B&rarr;C) are resolved to direct mappings (A&rarr;C, B&rarr;C) with circular reference detection.
 
 ### 3.6 Knowledge Graph Construction and Querying
 
