@@ -172,12 +172,53 @@ We conducted an ablation experiment on 15 productive articles using llama-3.3-70
 
 Per-pass contributions: Pass 1 (exhaustive) 45.7%, Pass 2 (overlooked scan) 35.3%, Pass 3 (gap-filling) 18.9%. Every pass contributes meaningfully. Pass 2 is most effective because it re-scans with explicit awareness of previously found relationships, targeting gaps that single-pass extraction misses.
 
-### 4.5 Query Answering Evaluation
+### 4.5 System Output Examples
+
+To illustrate what KGMiner produces, we present representative outputs at each stage of the pipeline.
+
+**Stage 1: Extracted Triples.** For a single PubMed article (PMID: 20559754, "Strain-dependent carotenoid productions in metabolically engineered Escherichia coli"), the multi-pass extraction produced typed triples such as:
+
+| Subject | Relation | Object |
+|---|---|---|
+| E. coli BW-CARO | produces | beta-carotene |
+| E. coli BW-ASTA | produces | astaxanthin |
+| E. coli BW-CARO | has_metric | 1.4 mg/g cdw |
+| crtEBIY operon | integrated_in | E. coli BW-CARO |
+| astaxanthin pathway | activates | carotenoid diversification |
+
+Each triple carries the source PMID, enabling citation traceability.
+
+**Stage 2: Structured Quantitative Data.** The `has_metric` relation captures performance benchmarks as structured triples rather than embedding values in entity names. Examples from the case study:
+
+| Entity | Metric Value | Source PMID |
+|---|---|---|
+| astaxanthin yield | $2,500 per kilogram | 20711573 |
+| astaxanthin titer | 225 mg/L | 20711573 |
+| Euglena gracilis biomass | 19 g/L after 145 h | 18633963 |
+| beta-carotene titer | 107.22 mg/L | 18633963 |
+| vitamin E yield | 30.1 mg/L | 18633963 |
+| lutein content | 10 g/kg dry weight | 20811803 |
+
+These structured metrics enable cross-study performance comparison queries that would be impossible with untyped extraction.
+
+**Stage 3: Query Answer Output.** When queried with "How can we increase beta-carotene production?", KGMiner produced a structured report organized by strategy category:
+
+> **Metabolic Engineering:** Overexpression of all-trans-beta-carotene hydroxylase leads to an 11.3-fold increase. Gene deletions identified via multi-objective optimization yield 107.3% improvement over parent strain. [Sources: knowledge graph triples with PMIDs]
+>
+> **Culture Medium Optimization:** Inexpensive carbon sources (glucose, peptone) and nitrogen-source concentration tuning achieve 107.22 mg/L yield and 11.4 mg/g DCW. [Sources: PMIDs 18633963, 20811803]
+>
+> **Host-Specific Strategies:** Highest reported titer in the knowledge graph is 142 mg/L, achieved in Yarrowia lipolytica. Other validated hosts include Mucor circinelloides, E. coli, and halophilic organisms.
+>
+> **Process Parameters:** Temperature control (30 vs 37 degrees C) and H2O2 content reduction (78.9% decrease) improve yields. Specific productivity reaches 0.165 g/L/h. [Source: PMID 15309430]
+
+The full answer spans 5,783 characters with six categories, each citing specific metrics traceable to source PMIDs. This contrasts with ungrounded LLM responses that provide generic advice without quantitative evidence.
+
+### 4.6 Query Answering Comparison
 
 ![Query Comparison](figures/fig9b_query_differences_table.png)
-*Figure 6. Comparison of query answering approaches.*
+*Figure 6. Comparison of query answering approaches: keyword-based with generic summary vs. Graph-RAG with anti-hallucination.*
 
-We evaluated query answering by asking "How can we increase beta-carotene production?" The Graph-RAG approach with anti-hallucination produced answers citing specific quantitative metrics from source papers: 11.3-fold increase via hydroxylase overexpression, 107.22 mg/L yield, and 142 mg/L highest reported titer -- all traceable to extracted triples with PMIDs. In contrast, a baseline approach using entity names without relationship types produced generic recommendations with vague metrics (e.g., "up to 4-fold increase") untraceable to specific sources.
+To evaluate the impact of typed triples and anti-hallucination on answer quality, we compared KGMiner's Graph-RAG approach against a baseline approach using entity names without relationship types. The baseline produced generic recommendations with vague metrics (e.g., "up to 4-fold increase") untraceable to specific sources. KGMiner's answers cited specific values (11.3-fold, 107.22 mg/L, 142 mg/L) all traceable to extracted triples with PMIDs.
 
 ---
 
