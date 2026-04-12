@@ -521,13 +521,13 @@ The 50 retrieved results span 23 unique source papers with 13 distinct relation 
 
 **Full Generated Answer.** From the 50 retrieved triples, KGMiner's anti-hallucination protocol produced the following structured answer:
 
-*Metabolic Engineering:* Overexpression of all-trans-beta-carotene hydroxylase leads to an 11.3-fold increase in beta-carotene (PMID: 31193511). Peroxisomal targeting of key enzymes enhances flux by compartmentalizing intermediates. Multi-objective optimization identified specific gene deletions that redirect metabolic flux, yielding 107.3% increase over the wild-type strain.
+**Metabolic Engineering:** Overexpression of all-trans-beta-carotene hydroxylase leads to an 11.3-fold increase in beta-carotene (PMID: 31193511). Peroxisomal targeting of key enzymes enhances flux by compartmentalizing intermediates. Multi-objective optimization identified specific gene deletions that redirect metabolic flux, yielding 107.3% increase over the wild-type strain.
 
-*Culture Medium Optimization:* Inexpensive carbon sources (glucose, peptone) significantly increase production, with the graph reporting 107.22 mg/L yield (PMID: 18633963). Nitrogen-source concentration tuning and peptone addition improve biomass and pigment synthesis. Optimal pH and temperature (30°C) reduce oxidative stress (78.9% decrease in H2O2).
+**Culture Medium Optimization:** Inexpensive carbon sources (glucose, peptone) significantly increase production, with the graph reporting 107.22 mg/L yield (PMID: 18633963). Nitrogen-source concentration tuning and peptone addition improve biomass and pigment synthesis. Optimal pH and temperature (30°C) reduce oxidative stress (78.9% decrease in H2O2).
 
-*Host-Specific Strategies:* Yarrowia lipolytica and Mucor wosnessenskii are highlighted as high-yield hosts (142 mg/L highest reported, PMID: 34983533). Halophiles and E. coli also contribute to production platform diversity.
+**Host-Specific Strategies:** Yarrowia lipolytica and Mucor wosnessenskii are highlighted as high-yield hosts (142 mg/L highest reported, PMID: 34983533). Halophiles and E. coli also contribute to production platform diversity.
 
-*Key Quantitative Findings:*
+**Key Quantitative Findings:**
 
 | Finding | Impact |
 |---|---|
@@ -620,25 +620,25 @@ beta-Carotene is a valuable pigment with applications in food, feed, cosmetics, 
 
 **3.1 Metabolic Engineering**
 
-*Enzyme Overexpression:* The graph indicates that overexpressing the all-trans-beta-carotene hydroxylase gene leads to an **11.3-fold** increase in beta-carotene. This enzyme converts lycopene to beta-carotene, a rate-limiting step in many pathways.
+**Enzyme Overexpression:** The graph indicates that overexpressing the all-trans-beta-carotene hydroxylase gene leads to an **11.3-fold** increase in beta-carotene. This enzyme converts lycopene to beta-carotene, a rate-limiting step in many pathways.
 
-*Subcellular Targeting:* Targeting key enzymes to peroxisomes enhances flux by compartmentalizing intermediates and reducing feedback inhibition.
+**Subcellular Targeting:** Targeting key enzymes to peroxisomes enhances flux by compartmentalizing intermediates and reducing feedback inhibition.
 
-*Gene Deletion and Optimization:* Multi-objective optimisation identified specific gene deletions that redirect metabolic flux toward the carotenoid pathway, yielding a **107.3%** increase over the wild-type strain.
+**Gene Deletion and Optimization:** Multi-objective optimisation identified specific gene deletions that redirect metabolic flux toward the carotenoid pathway, yielding a **107.3%** increase over the wild-type strain.
 
 **3.2 Medium Composition**
 
-*Carbon Sources:* Inexpensive carbon sources such as glucose and peptone significantly increase production. The graph reports a **107.22 mg/L** yield when glucose is used as the primary carbon source.
+**Carbon Sources:** Inexpensive carbon sources such as glucose and peptone significantly increase production. The graph reports a **107.22 mg/L** yield when glucose is used as the primary carbon source.
 
-*Nitrogen and Peptone:* Adjusting nitrogen-source concentration and adding peptone improves biomass and pigment synthesis, contributing to higher specific productivity (**0.165 g/L/h**).
+**Nitrogen and Peptone:** Adjusting nitrogen-source concentration and adding peptone improves biomass and pigment synthesis, contributing to higher specific productivity (**0.165 g/L/h**).
 
-*pH and Temperature:* Optimal pH and temperature (30 degrees C) reduce oxidative stress (78.9% decrease in H2O2) and enhance enzyme activity.
+**pH and Temperature:** Optimal pH and temperature (30 degrees C) reduce oxidative stress (78.9% decrease in H2O2) and enhance enzyme activity.
 
 **3.3 Process Design**
 
-*Response Surface Methodology (RSM):* RSM was used to fine-tune medium components, achieving **11.4 mg/g DCW**. This approach systematically explores interactions between variables, providing a robust design space.
+**Response Surface Methodology (RSM):** RSM was used to fine-tune medium components, achieving **11.4 mg/g DCW**. This approach systematically explores interactions between variables, providing a robust design space.
 
-*Hydrogen Peroxide Management:* Lowering H2O2 levels mitigates oxidative damage to enzymes and cells, indirectly boosting carotenoid synthesis.
+**Hydrogen Peroxide Management:** Lowering H2O2 levels mitigates oxidative damage to enzymes and cells, indirectly boosting carotenoid synthesis.
 
 **3.4 Host Selection**
 
@@ -668,7 +668,7 @@ The knowledge graph consolidates evidence that beta-carotene production can be d
 
 ---
 
-*The above answer was generated entirely from 50 semantically retrieved triples spanning 23 source papers. No LLM training-data content was used. Every quantitative value (11.3-fold, 107.22 mg/L, 142 mg/L, 78.9%) is traceable to a specific extracted triple and source PMID.*
+Note: The above answer was generated entirely from 50 semantically retrieved triples spanning 23 source papers. No LLM training-data content was used. Every quantitative value (11.3-fold, 107.22 mg/L, 142 mg/L, 78.9%) is traceable to a specific extracted triple and source PMID.
 
 ---
 
@@ -685,6 +685,7 @@ The knowledge graph consolidates evidence that beta-carotene production can be d
 | Papers synthesized | Single traversal | 23 papers, 50 triples |
 | Output structure | Paragraph summary | Structured report with tables, sections, metrics |
 | Actionability | Low | High — specific genes, strains, titers, conditions |
+
 ## CHAPTER 7: CONCLUSION
 
 This report presents KGMiner, an enhanced AI-driven workflow for constructing typed, directed knowledge graphs from biomedical literature. Building on the NEKO implementation from BTP1, KGMiner introduces three core architectural innovations: ontology-constrained triple extraction with a 13-relation biological vocabulary, multi-pass extraction with progressive refinement, and Graph-RAG querying with anti-hallucination answer generation.

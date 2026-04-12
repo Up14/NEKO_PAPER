@@ -125,7 +125,6 @@ table {
     border-collapse: collapse;
     margin: 14pt 0;
     font-size: 10pt;
-    page-break-inside: avoid;
 }
 
 th {
