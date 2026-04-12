@@ -1,4 +1,4 @@
-"""Generate BTP2 report PDF with IIT Kharagpur academic styling."""
+"""Generate BTP2 report PDF with proper IIT Kharagpur thesis formatting."""
 import markdown
 from weasyprint import HTML, CSS
 import os
@@ -15,8 +15,8 @@ md_html = md_html.replace('src="figures/', f'src="{os.path.abspath(FIGURES_DIR)}
 
 css = """
 @page {
-    size: letter;
-    margin: 2.5cm 2.5cm 2.5cm 2.5cm;
+    size: A4;
+    margin: 2.54cm 3.17cm 2.54cm 3.17cm;
     @bottom-center {
         content: counter(page);
         font-size: 10pt;
@@ -26,196 +26,180 @@ css = """
 
 body {
     font-family: 'Times New Roman', Times, serif;
-    font-size: 11pt;
-    line-height: 1.6;
+    font-size: 12pt;
+    line-height: 1.5;
     color: #000;
     text-align: justify;
     hyphens: auto;
 }
 
-/* Title page */
-h1 {
-    font-size: 18pt;
-    font-weight: bold;
-    text-align: center;
-    margin-top: 30pt;
-    margin-bottom: 12pt;
-    line-height: 1.4;
-    page-break-after: avoid;
-}
-
-/* Title page wrapper */
+/* ===== TITLE PAGE ===== */
 .titlepage {
     text-align: center;
-    margin-bottom: 10pt;
+    page-break-after: always;
+    padding-top: 30pt;
 }
 
 .titlepage h1 {
     font-size: 18pt;
     font-weight: bold;
-    margin-top: 30pt;
-    margin-bottom: 18pt;
+    text-align: center;
+    margin-top: 10pt;
+    margin-bottom: 30pt;
     line-height: 1.4;
 }
 
 .titlepage p {
     text-align: center;
-    font-size: 11pt;
-    margin-bottom: 8pt;
-    margin-top: 0;
+    font-size: 12pt;
+    margin-top: 6pt;
+    margin-bottom: 6pt;
+    line-height: 1.6;
 }
 
-
-/* CERTIFICATE / ACKNOWLEDGEMENT headings */
+/* ===== H2 = Certificate / Acknowledgement / Contents / Summary headings ===== */
+/* Each starts on its own page */
 h2 {
-    font-size: 13pt;
+    font-size: 14pt;
     font-weight: bold;
     text-align: center;
-    margin-top: 24pt;
-    margin-bottom: 10pt;
+    margin-top: 60pt;
+    margin-bottom: 24pt;
     text-transform: uppercase;
-    letter-spacing: 0.5pt;
+    letter-spacing: 1pt;
+    page-break-before: always;
     page-break-after: avoid;
 }
 
-/* Chapter headings */
+/* ===== H3 = Section headings (5.1, 5.2 etc.) ===== */
 h3 {
     font-size: 12pt;
     font-weight: bold;
-    margin-top: 18pt;
-    margin-bottom: 6pt;
+    text-align: left;
+    margin-top: 16pt;
+    margin-bottom: 8pt;
     page-break-after: avoid;
-    text-transform: uppercase;
 }
 
-/* Sub-section headings */
+/* ===== H4 = Sub-section headings (e.g. 5.1, 5.2) ===== */
 h4 {
-    font-size: 11pt;
+    font-size: 12pt;
     font-weight: bold;
-    margin-top: 12pt;
-    margin-bottom: 4pt;
+    margin-top: 16pt;
+    margin-bottom: 8pt;
     page-break-after: avoid;
 }
 
-/* Sub-sub-section headings */
+/* ===== H5 = Sub-sub-section headings ===== */
 h5 {
-    font-size: 11pt;
+    font-size: 12pt;
     font-weight: bold;
     font-style: italic;
-    margin-top: 10pt;
-    margin-bottom: 4pt;
+    margin-top: 12pt;
+    margin-bottom: 6pt;
     page-break-after: avoid;
 }
 
+/* ===== BODY PARAGRAPHS ===== */
 p {
-    margin: 0 0 8pt 0;
+    margin: 0 0 10pt 0;
     text-indent: 0;
 }
 
 hr {
     border: none;
-    border-top: 1px solid #ccc;
-    margin: 16pt 0;
+    border-top: 1px solid #777;
+    margin: 14pt 0;
 }
 
-/* Tables */
+/* ===== TABLES ===== */
 table {
     width: 100%;
     border-collapse: collapse;
-    margin: 10pt 0;
-    font-size: 9.5pt;
+    margin: 14pt 0;
+    font-size: 10pt;
     page-break-inside: avoid;
 }
 
 th {
-    background-color: #e8e8e8;
-    border: 1px solid #666;
-    padding: 4pt 6pt;
+    background-color: #d0d0d0;
+    border: 1pt solid #333;
+    padding: 5pt 8pt;
     text-align: left;
     font-weight: bold;
 }
 
 td {
-    border: 1px solid #999;
-    padding: 3pt 6pt;
+    border: 1pt solid #666;
+    padding: 4pt 8pt;
     text-align: left;
     vertical-align: top;
 }
 
 tr:nth-child(even) {
-    background-color: #f8f8f8;
+    background-color: #f5f5f5;
 }
 
-/* Figures */
+/* ===== FIGURES ===== */
 img {
     max-width: 90%;
     display: block;
-    margin: 10pt auto;
+    margin: 14pt auto;
     page-break-inside: avoid;
 }
 
-/* Figure captions = italic paragraphs after images */
+/* Figure caption: italic-only paragraph */
 p > em:only-child {
     display: block;
     text-align: center;
-    font-size: 9.5pt;
-    margin-bottom: 14pt;
-    color: #333;
+    font-size: 10pt;
+    margin-top: 4pt;
+    margin-bottom: 18pt;
     font-style: italic;
+    color: #111;
 }
 
-/* Lists */
+/* ===== LISTS ===== */
 ul, ol {
-    margin: 4pt 0 8pt 22pt;
+    margin: 6pt 0 12pt 26pt;
     padding: 0;
 }
 
 li {
-    margin-bottom: 4pt;
+    margin-bottom: 5pt;
     line-height: 1.5;
 }
 
-/* Bold */
+/* ===== INLINE ===== */
 strong {
     font-weight: bold;
 }
 
-/* Code */
 code {
     font-family: 'Courier New', monospace;
-    font-size: 9pt;
+    font-size: 9.5pt;
     background: #f0f0f0;
     padding: 1pt 3pt;
-    border-radius: 2pt;
 }
 
-/* References - hanging indent */
+/* ===== REFERENCES (hanging indent) ===== */
 h2:last-of-type ~ p {
-    text-indent: -20pt;
-    padding-left: 20pt;
-    font-size: 10pt;
-    margin-bottom: 5pt;
-}
-
-/* CONTENTS table spacing */
-p + p {
-    margin-top: 0;
+    text-indent: -24pt;
+    padding-left: 24pt;
+    font-size: 11pt;
+    margin-bottom: 6pt;
 }
 """
 
-full_html = f"""
-<!DOCTYPE html>
+full_html = f"""<!DOCTYPE html>
 <html>
-<head>
-    <meta charset="utf-8">
-</head>
+<head><meta charset="utf-8"></head>
 <body>
 {md_html}
 </body>
-</html>
-"""
+</html>"""
 
-print("Generating BTP2 Report PDF...")
+print("Generating BTP2 PDF...")
 html = HTML(string=full_html, base_url=os.path.abspath('.'))
 html.write_pdf(OUTPUT_PDF, stylesheets=[CSS(string=css)])
 

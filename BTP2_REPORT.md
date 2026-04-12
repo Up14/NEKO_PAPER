@@ -22,8 +22,6 @@
 
 </div>
 
----
-
 ## CERTIFICATE
 
 Certified that the dissertation entitled **"KGMiner: Enhanced Knowledge Graph Mining with Ontology-Constrained Multi-Pass Extraction and Graph-RAG for Scientific Literature"** submitted by **Upanshu Jain (Roll No. 22BT10035)** in partial fulfilment of the requirements for the award of the Degree of Bachelor of Technology in Biotechnology and Biochemical Engineering at the Indian Institute of Technology Kharagpur, is a record of his own work carried out under my supervision and guidance during the Spring Semester 2025-26. The project report embodies results of original work carried out by the student, and the content does not form the basis for the award of any other degree or diploma to the candidate.
@@ -42,8 +40,6 @@ Certified that the dissertation entitled **"KGMiner: Enhanced Knowledge Graph Mi
 <p style="text-align:right;">IIT Kharagpur</p>
 </div>
 
----
-
 ## ACKNOWLEDGEMENT
 
 It gives me great pleasure to present the project report on **"KGMiner: Enhanced Knowledge Graph Mining with Ontology-Constrained Multi-Pass Extraction and Graph-RAG for Scientific Literature"**. I am extremely thankful to **Prof. Amit Ghosh** for his constant guidance throughout the experimentation process. His expertise, intellectual rigor, and unwavering support were truly instrumental in shaping the methodology and interpretation of this research. Thank you for consistently encouraging me to push the boundaries of this study.
@@ -55,8 +51,6 @@ This work builds upon the foundation established during BTP1, where the NEKO wor
 ----------------------------
 
 **Upanshu Jain**
-
----
 
 ## CONTENTS
 
@@ -116,8 +110,6 @@ Chapter 8: Future Work .........................................................
 
 Chapter 9: References .......................................................................37
 
----
-
 ## SUMMARY
 
 The exponential growth of biomedical literature makes manual knowledge synthesis increasingly intractable for researchers. BTP1 addressed this challenge by implementing the Network for Knowledge Organization (NEKO) workflow, which demonstrated that LLM-driven knowledge graph construction from PubMed abstracts is both feasible and valuable for biological research. The NEKO implementation successfully processed 1,088 Rhodococcus abstracts, constructed a knowledge graph with over 180 unique nodes, and demonstrated measurable advantages over zero-shot GPT-4 queries in data provenance, traceability, and granularity.
@@ -127,8 +119,6 @@ However, BTP1 also revealed critical limitations: extracted relationships lacked
 This BTP2 report presents **KGMiner**, a substantially redesigned system that directly addresses each of these limitations. KGMiner introduces three core innovations: (1) **ontology-constrained triple extraction**, where LLM outputs are constrained to typed (Subject, Relation, Object) triples using a 13-relation biological vocabulary; (2) **multi-pass extraction with progressive refinement**, applying three sequential extraction passes plus an independent validation pass per abstract; and (3) **Graph-RAG querying with anti-hallucination answer generation**, combining embedding-based semantic search with evidence-grounding protocols that prevent ungrounded responses.
 
 Evaluated on a beta-carotene biosynthesis case study (226 PubMed articles), KGMiner extracted 4,722 typed triples across 2,996 normalized entities. The multi-pass approach increased triple yield by 170.6% over single-pass extraction (855 vs. 316 triples on a 15-article ablation). The Graph-RAG engine produced detailed, citation-backed answers with specific quantitative metrics (e.g., 11.3-fold increase, 107.22 mg/L, 142 mg/L) traceable to source PubMed IDs. The system is deployed as a FastAPI web application using free-tier cloud LLM providers (Groq and Cerebras), making it accessible without dedicated GPU resources.
-
----
 
 ## CHAPTER 1: INTRODUCTION
 
@@ -151,8 +141,6 @@ This report presents KGMiner, a redesigned system that addresses each of these l
 The system was applied to a new case study -- improving beta-carotene production in microorganisms -- processing 226 PubMed abstracts and extracting 4,722 typed triples across 2,996 normalized biological entities. This domain was selected because beta-carotene biosynthesis involves well-characterized metabolic engineering strategies in multiple host organisms, providing a rich and verifiable ground truth for evaluating extraction quality.
 
 The contributions of BTP2 are thus both architectural (the KGMiner pipeline design) and empirical (quantitative evaluation of each component through ablation studies and case study results on real biological research data).
-
----
 
 ## CHAPTER 2: LITERATURE REVIEW
 
@@ -194,8 +182,6 @@ Based on the BTP1 evaluation and the broader literature, four critical gaps rema
 
 **4. Anti-hallucination in knowledge synthesis.** Standard RAG systems instruct the LLM to answer from provided context but do not enforce fine-grained evidence tracing. When an LLM synthesizes an answer from 50 retrieved triples, it may blend extracted evidence with background knowledge from pretraining. A strict evidence-grounding protocol that traces each claim to specific triple identifiers and PMIDs provides stronger guarantees against ungrounded content.
 
----
-
 ## CHAPTER 3: RATIONALE OF THE STUDY
 
 ### 3.1 Motivation
@@ -222,8 +208,6 @@ The improvements implemented in KGMiner address these limitations systematically
 
 BTP2 evaluates KGMiner on the domain of beta-carotene biosynthesis in microorganisms. This domain was selected for several reasons. First, it represents a high-priority metabolic engineering goal with substantial published literature (thousands of PubMed articles). Second, the carotenoid biosynthesis pathway is well-characterized, providing a verifiable ground truth for assessing extraction accuracy. Third, the domain involves multiple host organisms (Yarrowia lipolytica, Escherichia coli, Mucor wosnessenskii, Rhodotorula toruloides), multiple enzymatic targets (crtYB, crtI, HMG1, lycopene cyclase), and quantitative performance benchmarks (titer in mg/L, yield improvement factors), making it an ideal test case for evaluating typed relation extraction and metric capture.
 
----
-
 ## CHAPTER 4: OBJECTIVES
 
 The overarching objective of BTP2 is to design, implement, and evaluate KGMiner, an enhanced AI-driven knowledge graph mining system that overcomes the limitations identified in BTP1. The specific objectives are:
@@ -239,8 +223,6 @@ The overarching objective of BTP2 is to design, implement, and evaluate KGMiner,
 5. **To validate the complete KGMiner pipeline on a real-world case study** (beta-carotene biosynthesis in microorganisms) using authentic PubMed data, and to compare quantitative results against the BTP1 NEKO implementation across all pipeline stages.
 
 6. **To implement a multi-provider LLM backend** supporting 13 models across two cloud providers (Groq and Cerebras) with automatic failover, rate limit management, and cooldown tracking to ensure reliable processing without dedicated GPU infrastructure.
-
----
 
 ## CHAPTER 5: METHODOLOGY
 
@@ -377,8 +359,6 @@ The querying subsystem was completely redesigned relative to BTP1, which used ke
 4. The LLM's training knowledge must not be used to supplement or extend the answer.
 
 This protocol transforms the system from an LLM that uses retrieved triples as hints into a structured evidence synthesizer that cannot make claims unsupported by extracted evidence.
-
----
 
 ## CHAPTER 6: RESULTS AND DISCUSSION
 
@@ -589,8 +569,6 @@ The following table provides a direct comparison between the BTP1 NEKO implement
 
 The BTP1 system demonstrated that LLM-based knowledge graph construction from PubMed is feasible. BTP2 addresses every structural limitation identified in BTP1: relationship types are now explicitly captured; multi-pass extraction recovers the majority of relationships that single-pass misses; semantic queries enable natural language access; and evidence-grounding prevents hallucination in answer synthesis.
 
----
-
 ## CHAPTER 7: CONCLUSION
 
 This report presents KGMiner, an enhanced AI-driven workflow for constructing typed, directed knowledge graphs from biomedical literature. Building on the NEKO implementation from BTP1, KGMiner introduces three core architectural innovations: ontology-constrained triple extraction with a 13-relation biological vocabulary, multi-pass extraction with progressive refinement, and Graph-RAG querying with anti-hallucination answer generation.
@@ -602,8 +580,6 @@ The semantic Graph-RAG querying system enables natural language queries against 
 KGMiner directly addresses each limitation identified in BTP1's Future Work section: full-sentence query processing is implemented via semantic triple embedding; efficiency is maintained through multi-provider LLM fallback and free-tier APIs; the hypothesis generation capability is embedded in the structured answer synthesis with quantitative benchmarks.
 
 The system is deployed as a FastAPI web application using free-tier cloud LLM providers (Groq and Cerebras with 13 available models), making it accessible for biological research without dedicated computational infrastructure. The codebase is publicly available at https://github.com/Up14/Knowledge.
-
----
 
 ## CHAPTER 8: FUTURE WORK
 
@@ -620,8 +596,6 @@ The following improvements are proposed as extensions of the KGMiner system:
 5. **Cross-Domain Validation.** The ablation study in this work used 15 articles for computational tractability. A larger-scale validation against manually curated knowledge bases (e.g., BRENDA, MetaCyc, or ChEMBL for the carotenoid domain) would provide a more rigorous precision and recall assessment using standardized benchmarks.
 
 6. **Real-Time Literature Monitoring.** Integrating PubMed's E-utilities notification system would allow KGMiner to monitor for new publications matching the research goal and automatically process and incorporate them into the knowledge graph. This would enable "living" knowledge bases that update as new results are published.
-
----
 
 ## CHAPTER 9: REFERENCES
 
