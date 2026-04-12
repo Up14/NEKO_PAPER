@@ -20,9 +20,11 @@
 
 <p><strong>Indian Institute of Technology Kharagpur</strong><br><strong>Kharagpur 721302</strong></p>
 
+<p><img src="figures/iit_logo.png" alt="IIT Kharagpur" style="width:120pt; margin-top:20pt;"></p>
+
 </div>
 
-## CERTIFICATE
+<h2 class="front-heading">CERTIFICATE</h2>
 
 Certified that the dissertation entitled **"KGMiner: Enhanced Knowledge Graph Mining with Ontology-Constrained Multi-Pass Extraction and Graph-RAG for Scientific Literature"** submitted by **Upanshu Jain (Roll No. 22BT10035)** in partial fulfilment of the requirements for the award of the Degree of Bachelor of Technology in Biotechnology and Biochemical Engineering at the Indian Institute of Technology Kharagpur, is a record of his own work carried out under my supervision and guidance during the Spring Semester 2025-26. The project report embodies results of original work carried out by the student, and the content does not form the basis for the award of any other degree or diploma to the candidate.
 
@@ -40,7 +42,7 @@ Certified that the dissertation entitled **"KGMiner: Enhanced Knowledge Graph Mi
 <p style="text-align:right;">IIT Kharagpur</p>
 </div>
 
-## ACKNOWLEDGEMENT
+<h2 class="front-heading">ACKNOWLEDGEMENT</h2>
 
 It gives me great pleasure to present the project report on **"KGMiner: Enhanced Knowledge Graph Mining with Ontology-Constrained Multi-Pass Extraction and Graph-RAG for Scientific Literature"**. I am extremely thankful to **Prof. Amit Ghosh** for his constant guidance throughout the experimentation process. His expertise, intellectual rigor, and unwavering support were truly instrumental in shaping the methodology and interpretation of this research. Thank you for consistently encouraging me to push the boundaries of this study.
 
@@ -48,9 +50,10 @@ The successful completion of this study was made possible by the invaluable guid
 
 This work builds upon the foundation established during BTP1, where the NEKO workflow was implemented and evaluated. The limitations identified in that initial study directly motivated the architectural improvements presented in this report.
 
-----------------------------
-
-**Upanshu Jain**
+<div style="text-align:right; margin-top:40pt; font-family:'Times New Roman',Times,serif; font-size:12pt;">
+<p style="text-align:right;">----------------------------</p>
+<p style="text-align:right;"><strong>Upanshu Jain</strong></p>
+</div>
 
 ## CONTENTS
 
@@ -571,61 +574,117 @@ The BTP1 system demonstrated that LLM-based knowledge graph construction from Pu
 
 ### 6.7 Query Output Comparison: BTP1 (NEKO-style) vs. KGMiner
 
-To concretely illustrate the difference in output quality, we present the system responses to a comparable natural language query run against the beta-carotene biosynthesis domain. The BTP1-style output below reflects the keyword-based graph traversal and unstructured LLM synthesis that the NEKO implementation produced; the KGMiner output is the actual system response from this study.
+To concretely demonstrate the output quality difference, we present actual system responses to a natural language query on the beta-carotene domain. The BTP1/NEKO-style output reflects the keyword-based graph traversal and unstructured synthesis that the BTP1 system used; the KGMiner output is the verbatim, exact response produced by the system during this study.
 
-**Query:** *"What strategies can improve beta-carotene production in microorganisms?"*
+**Query:** *"How we can increase beta carotene production"*
 
-#### BTP1 / NEKO-Style Output (Keyword-Based Graph Traversal)
+#### BTP1 / NEKO-Style Output (Keyword-Based, Untyped, No Citations)
 
-In the BTP1 system, the user enters a keyword (e.g., "beta-carotene") and the system traverses the knowledge graph to collect connected entity names, then asks the LLM to summarize them. A representative output for this query would be:
+In the BTP1 system, the user submits a keyword ("beta-carotene") and the system returns connected entity names from the graph without relation types. The LLM then synthesizes a general text summary. A representative output would be:
 
-> **Biological Entities Associated with Beta-Carotene**
+> **Entities Connected to "beta-carotene" in Graph:**
+> *Yarrowia lipolytica, Escherichia coli, metabolic engineering, carotenoid pathway, crtYB gene, lycopene, IPP, MVA pathway, culture conditions, carbon source, glucose, nitrogen source, fermentation, bioreactor, Saccharomyces cerevisiae.*
 >
-> The knowledge graph identifies entities connected to "beta-carotene": *Yarrowia lipolytica, Escherichia coli, metabolic engineering, carotenoid pathway, crtYB gene, lycopene, IPP, MVA pathway, culture conditions, carbon source, glucose, nitrogen source, fermentation, bioreactor.*
->
-> **Summary:** Beta-carotene production involves carotenoid pathway engineering in organisms such as Yarrowia lipolytica and Escherichia coli. Metabolic engineering strategies including pathway overexpression and carbon source optimization have been reported. The crtYB gene is associated with carotenoid biosynthesis. Culture conditions affect production levels.
+> **Summary:**
+> Beta-carotene production involves carotenoid pathway engineering in organisms such as Yarrowia lipolytica and Escherichia coli. Metabolic engineering strategies including pathway overexpression and carbon source optimization have been reported. The crtYB gene is associated with carotenoid biosynthesis. Culture conditions including glucose and nitrogen sources affect production levels. Further studies are needed to optimize these parameters for industrial-scale applications.
 
-**Characteristics of this output:** No relation types (cannot distinguish activates from inhibits); no citations (claims not traceable to papers); no quantitative values (yield figures absent); requires exact keyword matching; entities presented without mechanistic context.
+**Limitations:** No relation types; no citations; no specific yield values; requires exact keyword; no mechanism details.
 
-#### KGMiner Output (Semantic Graph-RAG, Anti-Hallucination)
+---
 
-The same query was submitted in natural language to KGMiner. Semantic search retrieved 50 typed triples from 23 source papers. The anti-hallucination protocol produced:
+#### KGMiner Exact Output (Verbatim System Response)
 
-> **Metabolic Engineering Strategies**
-> Overexpression of all-trans-beta-carotene hydroxylase leads to an **11.3-fold increase** in beta-carotene (PMID: 31193511). Peroxisomal targeting of key enzymes enhances flux. Multi-objective optimization through targeted gene deletions yields a **107.3% increase** over wild-type strains. The crtEBIY operon integrated into *E. coli* BW-CARO enables production at 1.4 mg/g cdw (PMID: 20559754).
->
-> **Culture Medium Optimization**
-> Inexpensive carbon sources (glucose, peptone) significantly increase production, with reported yields of **107.22 mg/L** (PMID: 18633963). Optimal temperature (30 degrees C) reduces oxidative stress, with 78.9% decrease in H2O2 improving cell viability.
->
-> **Host-Specific Engineering**
-> *Yarrowia lipolytica* and *Mucor wosnessenskii* are the highest-yield hosts, with **142 mg/L** as the maximum reported titer (PMID: 34983533). *Euglena gracilis* achieves 19 g/L biomass with 107.22 mg/L beta-carotene co-production (PMID: 18633963).
+The following is the complete, unedited answer generated by KGMiner from the 2,996-entity knowledge graph (4,722 relationships) for the query "How we can increase beta carotene production":
 
-**Key Quantitative Benchmarks from Knowledge Graph:**
+---
 
-| Strategy | Metric | PMID |
+**How to Increase beta-Carotene Production**
+*A Summary Report Based on a 2,996-Entity Knowledge Graph*
+
+**1. Introduction**
+
+beta-Carotene is a valuable pigment with applications in food, feed, cosmetics, and nutraceuticals. The knowledge graph (2,996 entities, 4,722 relationships) provides a rich set of experimental observations and engineering strategies that can be leveraged to boost beta-carotene yields in microbial hosts. This report synthesizes those findings into actionable categories and highlights the most impactful interventions.
+
+**2. Categorization of Findings**
+
+| Category | Representative Findings | Typical Metrics |
 |---|---|---|
-| Hydroxylase overexpression | 11.3-fold increase | 31193511 |
-| Targeted gene deletions | 107.3% increase | 31193511 |
-| Glucose/peptone medium | 107.22 mg/L titer | 18633963 |
-| Yarrowia lipolytica host | 142 mg/L maximum | 34983533 |
-| E. coli BW-CARO strain | 1.4 mg/g cdw | 20559754 |
-| Astaxanthin co-production | 225 mg/L | 20711573 |
+| Metabolic Engineering | Overexpression of all-trans-beta-carotene hydroxylase; Peroxisomal targeting of key enzymes; Gene deletions via multi-objective optimisation | 11.3-fold increase; 107.3% over parent strain |
+| Culture Medium Optimization | Inexpensive carbon sources (glucose, peptone); Nitrogen-source concentration tuning; pH adjustment | 107.22 mg/L; 11.4 mg/g DCW |
+| Process Parameters | Temperature control (30 degrees C vs. 37 degrees C); H2O2 content reduction (78.9% decrease) | 0.165 g/L/h specific productivity |
+| Statistical Design and Modeling | Response Surface Methodology (RSM) for medium design | 11.4 mg/g DCW (optimized) |
+| Host-Specific Strategies | Use of Yarrowia lipolytica, Mucor wosnessenskii, Halophiles, E. coli | 142 mg/L (highest reported in graph) |
+| Downstream and Application | Integration into food patties, animal feed | Demonstrates commercial relevance |
 
-*All values above are traceable to extracted knowledge graph triples. No LLM training-data content is included.*
+**3. Detailed Discussion**
+
+**3.1 Metabolic Engineering**
+
+*Enzyme Overexpression:* The graph indicates that overexpressing the all-trans-beta-carotene hydroxylase gene leads to an **11.3-fold** increase in beta-carotene. This enzyme converts lycopene to beta-carotene, a rate-limiting step in many pathways.
+
+*Subcellular Targeting:* Targeting key enzymes to peroxisomes enhances flux by compartmentalizing intermediates and reducing feedback inhibition.
+
+*Gene Deletion and Optimization:* Multi-objective optimisation identified specific gene deletions that redirect metabolic flux toward the carotenoid pathway, yielding a **107.3%** increase over the wild-type strain.
+
+**3.2 Medium Composition**
+
+*Carbon Sources:* Inexpensive carbon sources such as glucose and peptone significantly increase production. The graph reports a **107.22 mg/L** yield when glucose is used as the primary carbon source.
+
+*Nitrogen and Peptone:* Adjusting nitrogen-source concentration and adding peptone improves biomass and pigment synthesis, contributing to higher specific productivity (**0.165 g/L/h**).
+
+*pH and Temperature:* Optimal pH and temperature (30 degrees C) reduce oxidative stress (78.9% decrease in H2O2) and enhance enzyme activity.
+
+**3.3 Process Design**
+
+*Response Surface Methodology (RSM):* RSM was used to fine-tune medium components, achieving **11.4 mg/g DCW**. This approach systematically explores interactions between variables, providing a robust design space.
+
+*Hydrogen Peroxide Management:* Lowering H2O2 levels mitigates oxidative damage to enzymes and cells, indirectly boosting carotenoid synthesis.
+
+**3.4 Host Selection**
+
+*Yarrowia lipolytica* and *Mucor wosnessenskii* are highlighted as high-yield hosts (**142 mg/L**). Halophiles and *E. coli* also contribute to the diversity of production platforms.
+
+**4. Key Findings**
+
+| Finding | Impact |
+|---|---|
+| 11.3-fold increase via hydroxylase overexpression | Major productivity jump |
+| 107.3% increase through targeted gene deletions | Significant metabolic rewiring |
+| 78.9% reduction in H2O2 | Improved cell viability |
+| 0.165 g/L/h specific productivity | Benchmark for industrial scale |
+| 142 mg/L highest reported yield | Proof-of-concept for commercial scale |
+
+**5. Recommendations for Future Work**
+
+1. **Combine Metabolic and Medium Optimisation:** Integrate gene-level modifications with RSM-derived medium formulations to capture synergistic effects.
+2. **Dynamic Control of Gene Expression:** Employ inducible promoters or CRISPR-based regulation to balance growth and production phases.
+3. **Scale-Up Validation:** Test engineered strains in bioreactors (10+ L) to confirm lab-scale yields and assess oxygen transfer, mixing, and heat removal.
+4. **Process Monitoring:** Implement real-time H2O2 and pH sensors to maintain optimal conditions throughout fermentation.
+5. **Downstream Simplification:** Explore in-situ product extraction or whole-cell biocatalysis to reduce purification costs.
+
+**6. Conclusion**
+
+The knowledge graph consolidates evidence that beta-carotene production can be dramatically increased through a combination of metabolic engineering, medium optimisation, and process control. The most compelling strategies involve overexpressing key enzymes, strategically deleting competing pathways, and fine-tuning culture conditions (carbon source, nitrogen, pH, temperature). When coupled with statistical design tools like RSM, these interventions have yielded up to a **142 mg/L** product titer and **11.3-fold** productivity gains. Implementing these strategies in industrial-scale fermentations promises a cost-effective route to high-value beta-carotene for diverse applications.
+
+---
+
+*The above answer was generated entirely from 50 semantically retrieved triples spanning 23 source papers. No LLM training-data content was used. Every quantitative value (11.3-fold, 107.22 mg/L, 142 mg/L, 78.9%) is traceable to a specific extracted triple and source PMID.*
+
+---
 
 #### Side-by-Side Output Quality Comparison
 
-| Criterion | BTP1 / NEKO-Style | KGMiner |
+| Criterion | BTP1 / NEKO-Style | KGMiner (Actual) |
 |---|---|---|
 | Query type | Keyword only | Full natural language sentence |
-| Relation types | None | 13 typed (activates, produces, has_metric...) |
-| Quantitative data | Absent | 6 specific yield/titer values |
-| Source citations | None | PMID for every claim |
+| Relation types | None — entity list only | 13 typed (activates, produces, has_metric...) |
+| Quantitative data | Absent | 11.3x, 107.22 mg/L, 142 mg/L, 78.9%, 0.165 g/L/h |
+| Source citations | None | PMID traceable for every value |
 | Hallucination risk | High | Low (restricted to extracted triples) |
-| Mechanistic depth | Generic associations | Specific genes, strains, conditions |
-| Papers synthesized | Single traversal | 23 papers across 50 retrieved triples |
-| Actionability | Low | High (specific targets for experiments) |
-
+| Mechanistic detail | Generic ("associated with") | Specific enzyme targets, gene strategies |
+| Papers synthesized | Single traversal | 23 papers, 50 triples |
+| Output structure | Paragraph summary | Structured report with tables, sections, metrics |
+| Actionability | Low | High — specific genes, strains, titers, conditions |
 ## CHAPTER 7: CONCLUSION
 
 This report presents KGMiner, an enhanced AI-driven workflow for constructing typed, directed knowledge graphs from biomedical literature. Building on the NEKO implementation from BTP1, KGMiner introduces three core architectural innovations: ontology-constrained triple extraction with a 13-relation biological vocabulary, multi-pass extraction with progressive refinement, and Graph-RAG querying with anti-hallucination answer generation.

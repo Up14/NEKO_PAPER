@@ -10,17 +10,18 @@ OUTPUT_PDF = "BTP2_REPORT.pdf"
 with open(PAPER_MD) as f:
     md_text = f.read()
 
-md_html = markdown.markdown(md_text, extensions=['tables', 'fenced_code'])
+md_html = markdown.markdown(md_text, extensions=['tables', 'fenced_code', 'md_in_html'])
 md_html = md_html.replace('src="figures/', f'src="{os.path.abspath(FIGURES_DIR)}/')
 
 css = """
 @page {
     size: A4;
     margin: 2.54cm 3.17cm 2.54cm 3.17cm;
-    @bottom-center {
+    @bottom-right {
         content: counter(page);
         font-size: 10pt;
         font-family: 'Times New Roman', Times, serif;
+        margin-right: 0;
     }
 }
 
@@ -57,18 +58,24 @@ body {
     line-height: 1.6;
 }
 
-/* ===== H2 = Certificate / Acknowledgement / Contents / Summary headings ===== */
+/* ===== H2 = Chapter / Summary / Contents headings = LEFT-ALIGNED ===== */
 /* Each starts on its own page */
 h2 {
     font-size: 14pt;
     font-weight: bold;
-    text-align: center;
+    text-align: left;
     margin-top: 60pt;
     margin-bottom: 24pt;
     text-transform: uppercase;
-    letter-spacing: 1pt;
+    letter-spacing: 0pt;
     page-break-before: always;
     page-break-after: avoid;
+}
+
+/* Certificate and Acknowledgement headings = CENTERED (front matter) */
+h2.front-heading {
+    text-align: center;
+    letter-spacing: 1pt;
 }
 
 /* ===== H3 = Section headings (5.1, 5.2 etc.) ===== */
