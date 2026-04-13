@@ -123,7 +123,7 @@ if os.path.exists(logo_path):
 add_text(s, "KGMiner: Enhanced Knowledge Graph Mining\nwith Ontology-Constrained Multi-Pass Extraction\nand Graph-RAG for Scientific Literature",
          0.6, 2.55, 12.1, 1.9, size=23, bold=True, color=BLUE, align=PP_ALIGN.CENTER)
 add_rect(s, 1.5, 4.55, 10.33, 0.05, fill=BLUE_LT)
-add_text(s, "Upanshu Jain  |  Roll No: 22BT10035\nDept. of Biotechnology & Biochemical Engineering",
+add_text(s, "Upanshu Jain  |  Roll No: 22BT10035\nDept. of Bioscience and Biotechnology",
          0.5, 4.75, 6.0, 1.1, size=13, color=DGREY)
 add_text(s, "Supervised by\nProf. Amit Ghosh\nEnergy Science and Engineering\nIIT Kharagpur",
          7.3, 4.75, 5.5, 1.1, size=13, color=DGREY, align=PP_ALIGN.RIGHT)
@@ -778,7 +778,7 @@ if os.path.exists(logo_path):
 add_text(s, "Thank You", 0, 2.55, 13.33, 1.0, size=40, bold=True, color=BLUE, align=PP_ALIGN.CENTER)
 add_rect(s, 3.5, 3.7, 6.33, 0.06, fill=BLUE_LT)
 add_text(s, "KGMiner — BTP2 Presentation", 0, 3.9, 13.33, 0.52, size=16, color=DGREY, align=PP_ALIGN.CENTER)
-add_text(s, "Upanshu Jain  |  Roll: 22BT10035\nDept. of Biotechnology & Biochemical Engineering",
+add_text(s, "Upanshu Jain  |  Roll: 22BT10035\nDept. of Bioscience and Biotechnology",
          0, 4.6, 13.33, 0.8, size=14, color=DGREY, align=PP_ALIGN.CENTER)
 add_text(s, "Supervisor: Prof. Amit Ghosh  |  Energy Science & Engineering  |  IIT Kharagpur",
          0, 5.52, 13.33, 0.5, size=12, color=DGREY, align=PP_ALIGN.CENTER)

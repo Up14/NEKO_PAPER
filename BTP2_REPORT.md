@@ -8,7 +8,7 @@
 
 <p><em>In partial fulfilment of the requirements<br>for the award of the degree of</em></p>
 
-<p><strong>Bachelor of Technology</strong><br><em>in</em><br><strong>Biotechnology and Biochemical Engineering</strong></p>
+<p><strong>Bachelor of Technology</strong><br><em>in</em><br><strong>Bioscience and Biotechnology</strong></p>
 
 <p><em>by</em></p>
 
@@ -26,7 +26,7 @@
 
 <h2 class="front-heading">CERTIFICATE</h2>
 
-Certified that the dissertation entitled **"KGMiner: Enhanced Knowledge Graph Mining with Ontology-Constrained Multi-Pass Extraction and Graph-RAG for Scientific Literature"** submitted by **Upanshu Jain (Roll No. 22BT10035)** in partial fulfilment of the requirements for the award of the Degree of Bachelor of Technology in Biotechnology and Biochemical Engineering at the Indian Institute of Technology Kharagpur, is a record of his own work carried out under my supervision and guidance during the Spring Semester 2025-26. The project report embodies results of original work carried out by the student, and the content does not form the basis for the award of any other degree or diploma to the candidate.
+Certified that the dissertation entitled **"KGMiner: Enhanced Knowledge Graph Mining with Ontology-Constrained Multi-Pass Extraction and Graph-RAG for Scientific Literature"** submitted by **Upanshu Jain (Roll No. 22BT10035)** in partial fulfilment of the requirements for the award of the Degree of Bachelor of Technology in Bioscience and Biotechnology at the Indian Institute of Technology Kharagpur, is a record of his own work carried out under my supervision and guidance during the Spring Semester 2025-26. The project report embodies results of original work carried out by the student, and the content does not form the basis for the award of any other degree or diploma to the candidate.
 
 &nbsp;
 
