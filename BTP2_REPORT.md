@@ -57,7 +57,7 @@ This work builds upon the foundation established during BTP1, where the NEKO wor
 
 ## CONTENTS
 
-Summary ............................................................................................4
+Abstract ............................................................................................4
 
 Chapter 1: Introduction ......................................................................5
 
@@ -113,37 +113,25 @@ Chapter 8: Future Work .........................................................
 
 Chapter 9: References .......................................................................37
 
-## SUMMARY
+## ABSTRACT
 
-The exponential growth of biomedical literature makes manual knowledge synthesis increasingly intractable for researchers. BTP1 addressed this challenge by implementing the Network for Knowledge Organization (NEKO) workflow, which demonstrated that LLM-driven knowledge graph construction from PubMed abstracts is both feasible and valuable for biological research. The NEKO implementation successfully processed 1,088 Rhodococcus abstracts, constructed a knowledge graph with over 180 unique nodes, and demonstrated measurable advantages over zero-shot GPT-4 queries in data provenance, traceability, and granularity.
+The exponential growth of biomedical literature makes manual knowledge synthesis increasingly intractable for researchers. Prior work implementing the Network for Knowledge Organization (NEKO) workflow (Xiao et al., 2025) demonstrated that LLM-driven knowledge graph construction from PubMed abstracts is feasible and valuable for biological research, successfully processing 1,088 Rhodococcus abstracts and producing a knowledge graph with over 180 unique nodes. However, that implementation also revealed critical limitations: extracted relationships lacked type labels, single-pass LLM extraction missed a significant fraction of relationships in complex abstracts, graph queries required exact entity name matching, and answer generation risked incorporating hallucinated content unsupported by the extracted evidence.
 
-However, BTP1 also revealed critical limitations: extracted relationships lacked type labels (making it impossible to distinguish activation from inhibition), single-pass LLM extraction missed a significant fraction of relationships in complex abstracts, graph queries required exact entity name matching, and answer generation risked incorporating hallucinated content unsupported by the extracted evidence.
-
-This BTP2 report presents **KGMiner**, a substantially redesigned system that directly addresses each of these limitations. KGMiner introduces three core innovations: (1) **ontology-constrained triple extraction**, where LLM outputs are constrained to typed (Subject, Relation, Object) triples using a 13-relation biological vocabulary; (2) **multi-pass extraction with progressive refinement**, applying three sequential extraction passes plus an independent validation pass per abstract; and (3) **Graph-RAG querying with anti-hallucination answer generation**, combining embedding-based semantic search with evidence-grounding protocols that prevent ungrounded responses.
+This report presents KGMiner, a substantially redesigned system that directly addresses each of these limitations. KGMiner introduces three core innovations: (1) ontology-constrained triple extraction, where LLM outputs are constrained to typed (Subject, Relation, Object) triples using a 13-relation biological vocabulary; (2) multi-pass extraction with progressive refinement, applying three sequential extraction passes plus an independent validation pass per abstract; and (3) Graph-RAG querying with anti-hallucination answer generation, combining embedding-based semantic search with evidence-grounding protocols that prevent ungrounded responses.
 
 Evaluated on a beta-carotene biosynthesis case study (226 PubMed articles), KGMiner extracted 4,722 typed triples across 2,996 normalized entities. The multi-pass approach increased triple yield by 170.6% over single-pass extraction (855 vs. 316 triples on a 15-article ablation). The Graph-RAG engine produced detailed, citation-backed answers with specific quantitative metrics (e.g., 11.3-fold increase, 107.22 mg/L, 142 mg/L) traceable to source PubMed IDs. The system is deployed as a FastAPI web application using free-tier cloud LLM providers (Groq and Cerebras), making it accessible without dedicated GPU resources.
 
 ## CHAPTER 1: INTRODUCTION
 
-The biomedical research community faces a fundamental information problem. PubMed currently indexes over 36 million citations and adds thousands of new publications daily. For researchers working on metabolic engineering challenges -- optimizing enzyme expression, identifying compatible host organisms, selecting culture conditions for target biosynthesis -- the relevant knowledge is scattered across hundreds of papers spanning decades of research. Reading, annotating, and synthesizing this literature manually can take weeks, delaying hypothesis formulation and experimental planning.
+The biomedical research community faces a fundamental information problem. PubMed currently indexes over 36 million citations and adds thousands of new publications daily. For researchers working on metabolic engineering challenges such as optimizing enzyme expression, identifying compatible host organisms, and selecting culture conditions for target biosynthesis, the relevant knowledge is scattered across hundreds of papers spanning decades of research. Reading, annotating, and synthesizing this literature manually can take weeks, delaying hypothesis formulation and experimental planning considerably.
 
-BTP1 established that automated AI workflows can partially solve this problem by constructing knowledge graphs from PubMed abstracts. The NEKO-based implementation demonstrated three important results: first, that LLMs can reliably extract entity-relationship pairs from biological abstracts without domain-specific training data; second, that the resulting knowledge graph organizes dispersed literature into a navigable structure that reveals thematic clusters not apparent from individual paper reading; and third, that the pipeline provides demonstrably higher data provenance and traceability compared to zero-shot LLM queries.
+Prior implementation of the NEKO (Network for Knowledge Organization) workflow (Xiao et al., 2025) demonstrated that automated AI pipelines can partially address this problem by constructing knowledge graphs from PubMed abstracts. That implementation produced three important results: large language models (LLMs) can reliably extract entity-relationship pairs from biological abstracts without domain-specific training data; the resulting knowledge graph organizes dispersed literature into a navigable structure that reveals thematic clusters not apparent from individual paper reading; and the pipeline provides demonstrably higher data provenance and traceability compared to zero-shot LLM queries.
 
-However, the BTP1 evaluation also revealed four structural limitations that constrained the utility of the system for actual research workflows:
+However, that evaluation also revealed four structural limitations that constrained the utility of the system for actual research workflows. The NEKO pipeline extracted entity associations without specifying relationship types, so the knowledge graph could indicate that "gene X relates to pathway Y" without distinguishing whether X activates, inhibits, encodes, or is a substrate of Y — a distinction that is critical for mechanistic reasoning and experimental hypothesis generation. A second limitation was that each abstract was processed in a single LLM pass, which tends to identify the most prominent relationships while overlooking secondary details described later in the abstract or in subordinate clauses; scientific abstracts routinely contain multiple biological interactions at varying levels of emphasis. The system also required users to supply exact entity names for graph traversal, limiting accessibility to those already familiar with the graph's contents and preventing natural language queries of the form "which enzymes upregulate carotenoid biosynthesis." Finally, answer generation carried a risk of hallucination: LLMs synthesizing extracted triples into natural language responses may incorporate background training knowledge rather than restricting themselves to the extracted evidence, and without explicit evidence-grounding constraints, such answers risk presenting unverifiable claims.
 
-**Untyped relationships.** The NEKO implementation extracted entity associations without specifying relationship types. The knowledge graph indicated that "gene X relates to pathway Y," but could not distinguish whether X activates, inhibits, encodes, or is a substrate of Y. For mechanistic reasoning and experimental hypothesis generation, this distinction is critical.
+This report presents KGMiner, a redesigned system that addresses each of these limitations. The central architectural changes are: typed triple extraction constrained to a 13-relation ontological vocabulary; multi-pass extraction applying three sequential passes to each abstract followed by an independent validation pass; semantic search over triple embeddings enabling natural language queries; and a strict anti-hallucination protocol that traces every answer claim to specific extracted triples and source PubMed IDs (PMIDs).
 
-**Single-pass extraction gaps.** Each abstract was processed once by the LLM. Scientific abstracts often contain multiple biological interactions described at varying levels of detail. A single-pass approach tends to identify the most prominent relationships while overlooking secondary details described later in the abstract or in subordinate clauses.
-
-**Keyword-only graph queries.** The BTP1 system required users to enter exact entity names for graph traversal. A researcher could not query "which enzymes upregulate carotenoid biosynthesis" -- they would need to know and enter the exact node names present in the graph. This fundamentally limits the accessibility of the knowledge base to users unfamiliar with its contents.
-
-**Hallucination risk in answer generation.** When LLMs synthesize extracted triples into natural language answers, they may incorporate background knowledge from training data rather than restricting themselves to the extracted evidence. Without explicit evidence-grounding constraints, answer generation risks presenting unverifiable claims.
-
-This report presents KGMiner, a redesigned system that addresses each of these limitations. The central architectural changes are: typed triple extraction constrained to a 13-relation ontological vocabulary; multi-pass extraction that applies three sequential passes to each abstract before a validation pass; semantic search over triple embeddings enabling natural language queries; and a strict anti-hallucination protocol for answer generation that traces every claim to specific extracted triples and source PMIDs.
-
-The system was applied to a new case study -- improving beta-carotene production in microorganisms -- processing 226 PubMed abstracts and extracting 4,722 typed triples across 2,996 normalized biological entities. This domain was selected because beta-carotene biosynthesis involves well-characterized metabolic engineering strategies in multiple host organisms, providing a rich and verifiable ground truth for evaluating extraction quality.
-
-The contributions of BTP2 are thus both architectural (the KGMiner pipeline design) and empirical (quantitative evaluation of each component through ablation studies and case study results on real biological research data).
+The system was evaluated on the domain of beta-carotene biosynthesis in microorganisms, processing 226 PubMed abstracts and extracting 4,722 typed triples across 2,996 normalized biological entities. This domain was selected because beta-carotene biosynthesis involves well-characterized metabolic engineering strategies across multiple host organisms, providing a rich and verifiable basis for assessing extraction quality. The contributions of this work are both architectural, in the design of the KGMiner pipeline, and empirical, through quantitative evaluation of each component via ablation studies and case study results on authentic biological research data.
 
 ## CHAPTER 2: LITERATURE REVIEW
 
@@ -213,25 +201,13 @@ BTP2 evaluates KGMiner on the domain of beta-carotene biosynthesis in microorgan
 
 ## CHAPTER 4: OBJECTIVES
 
-The overarching objective of BTP2 is to design, implement, and evaluate KGMiner, an enhanced AI-driven knowledge graph mining system that overcomes the limitations identified in BTP1. The specific objectives are:
-
-1. **To design and implement an ontology-constrained triple extraction module** that constrains LLM outputs to typed (Subject, Relation, Object) triples using a controlled vocabulary of 13 biological relationship types, with explicit rules for separating quantitative measurements into structured metric triples.
-
-2. **To develop and evaluate a multi-pass extraction protocol** applying three sequential passes (exhaustive, overlooked scan, gap-filling) followed by an independent validation pass, and to quantify the recall improvement over single-pass extraction through a controlled ablation study.
-
-3. **To implement a Graph-RAG querying system with anti-hallucination answer generation** using embedding-based semantic search over triple embeddings, enabling natural language queries that retrieve relevant knowledge regardless of exact entity naming.
-
-4. **To develop post-extraction normalization pipelines** for both relation terms (mapping 41 synonym strings to 13 canonical types) and entity names (cosine similarity > 0.85 with transitive chain resolution), and to quantify canonical coverage in the extracted knowledge graph.
-
-5. **To validate the complete KGMiner pipeline on a real-world case study** (beta-carotene biosynthesis in microorganisms) using authentic PubMed data, and to compare quantitative results against the BTP1 NEKO implementation across all pipeline stages.
-
-6. **To implement a multi-provider LLM backend** supporting 13 models across two cloud providers (Groq and Cerebras) with automatic failover, rate limit management, and cooldown tracking to ensure reliable processing without dedicated GPU infrastructure.
+The primary objective of this work is to design, implement, and evaluate KGMiner, an AI-driven knowledge graph mining system that overcomes critical limitations of existing LLM-based literature extraction pipelines. To this end, KGMiner introduces three core technical contributions: (1) an ontology-constrained triple extraction module that constrains LLM outputs to a controlled vocabulary of 13 biological relationship types, with dedicated handling for quantitative metric data to prevent entity fragmentation; (2) a multi-pass extraction protocol applying three sequential passes followed by an independent validation pass, with recall improvement quantified through a controlled ablation study; and (3) a Graph-RAG querying system with anti-hallucination answer generation using embedding-based semantic search over triple embeddings, accompanied by a post-extraction normalization pipeline that maps 41 synonym relation strings to canonical types and resolves transitive entity deduplication chains. The complete system is validated on a beta-carotene biosynthesis case study using 226 authentic PubMed abstracts and deployed as a FastAPI web application on free-tier cloud LLM infrastructure (Groq and Cerebras, 13 models with automatic failover).
 
 ## CHAPTER 5: METHODOLOGY
 
 ### 5.1 System Architecture and Overview
 
-KGMiner operates as a six-stage pipeline accepting a natural language research goal as input and producing a typed, directed knowledge graph with natural language query capabilities as output. The pipeline stages are: automated query generation, literature retrieval with relevance filtering, ontology-constrained multi-pass triple extraction, post-extraction normalization, directed multigraph construction, and Graph-RAG querying with anti-hallucination answer generation. The system is deployed as a FastAPI web application, with goal management persisting across sessions via a file-based storage system.
+KGMiner operates as a six-stage pipeline accepting a natural language research goal as input and producing a typed, directed knowledge graph with natural language query capabilities as output. The pipeline stages are: automated query generation, literature retrieval with relevance filtering, ontology-constrained multi-pass triple extraction, post-extraction normalization, directed multigraph construction, and Graph-RAG querying with anti-hallucination answer generation. The system is deployed as a FastAPI web application, with goal management persisting across sessions via a file-based storage system. The complete pipeline architecture is illustrated in Figure 1.
 
 ![KGMiner Pipeline](figures/fig1_pipeline_comparison.png)
 
@@ -313,7 +289,7 @@ This multi-pass design was motivated by known LLM attention behavior: models foc
 
 Raw extraction produces heterogeneous relation strings and entity names that must be normalized for graph coherence.
 
-**Relation Normalization.** The extraction prompt constrains output to 13 canonical relations, but LLMs occasionally output synonyms or paraphrases ("upregulates" instead of "activates," "produces" vs. "is responsible for production of"). A normalization layer maintains a pre-compiled mapping of 41 synonym strings to canonical relation types, applied using regular expressions sorted by length (longest patterns matched first to prevent substring conflicts). Examples of mappings:
+**Relation Normalization.** The extraction prompt constrains output to 13 canonical relations, but LLMs occasionally output synonyms or paraphrases ("upregulates" instead of "activates," "produces" vs. "is responsible for production of"). A normalization layer maintains a pre-compiled mapping of 41 synonym strings to canonical relation types, applied using regular expressions sorted by length (longest patterns matched first to prevent substring conflicts). Representative examples of these mappings are given in Table 2.
 
 | Synonym Terms | Canonical Relation |
 |---|---|
@@ -321,6 +297,8 @@ Raw extraction produces heterogeneous relation strings and entity names that mus
 | blocks, suppresses, reduces, downregulates, knocks out | inhibits |
 | yields, generates, biosynthesizes, secretes | produces |
 | codes for, expresses, translates, transcribes | encodes |
+
+*Table 2: Representative synonym-to-canonical relation mappings from the 41-entry normalization dictionary.*
 
 After normalization, triples within each article are deduplicated using case-insensitive exact matching on the (Subject, Relation, Object) triple.
 
@@ -330,7 +308,7 @@ First, the similarity threshold is raised from 0.80 to 0.85. At 0.80, biological
 
 Second, the canonical entity selection rule is changed from "first-seen" to "longest name." When two entities are identified as duplicates, the longer (more descriptive) name is selected as the canonical form. For example, "Yarrowia lipolytica" is preferred over "Y. lipolytica," and "beta-carotene pathway" is preferred over "carotenoid pathway." This produces a knowledge graph where node labels are maximally informative.
 
-Third, transitive normalization chains are resolved to direct mappings. If entity A maps to B and B maps to C, all references to A and B in the triple set are updated to C, and circular reference chains (A→B→A) are detected and broken. This prevents graph fragmentation where different papers' entity terminology creates disconnected islands of synonymous nodes.
+Third, transitive normalization chains are resolved to direct mappings. If entity A maps to B and B maps to C, all references to A and B in the triple set are updated to C, and circular reference chains (A→B→A) are detected and broken. This prevents graph fragmentation where different papers' entity terminology creates disconnected islands of synonymous nodes. The effect of this normalization process is illustrated in Figure 2.
 
 ![Entity Normalization](figures/fig7_entity_normalization.png)
 
@@ -367,7 +345,7 @@ This protocol transforms the system from an LLM that uses retrieved triples as h
 
 ### 6.1 Quantitative Analysis of Extraction
 
-KGMiner was evaluated on the research goal: **"Study on improving beta-carotene production in microorganisms."** The automated query generation decomposed this goal into four concept categories and generated three complementary PubMed queries:
+KGMiner was evaluated on the research goal: "Study on improving beta-carotene production in microorganisms." The automated query generation decomposed this goal into four concept categories, as shown in Table 3, and generated three complementary PubMed queries:
 
 | Category | Extracted Concepts |
 |---|---|
@@ -376,12 +354,14 @@ KGMiner was evaluated on the research goal: **"Study on improving beta-carotene 
 | Process | improving production, enhancing biosynthesis |
 | Other | (none) |
 
-**Generated PubMed Queries:**
+*Table 3: Concept categories extracted from the research goal by automated query generation.*
+
+Generated PubMed Queries:
 - Query 1 (Baseline): `beta-carotene AND microorganisms AND improving production`
 - Query 2 (Broad): `(beta-carotene[tiab]) AND (microorganisms[tiab])`
 - Query 3 (Specific): `(beta-carotene[tiab]) AND (microorganisms[tiab]) AND ("improving production"[tiab] OR "enhancing biosynthesis"[tiab])`
 
-The retrieval pipeline processed these queries and assembled the following article dataset:
+The retrieval pipeline processed these queries and assembled the article dataset summarised in Table 4.
 
 | Pipeline Stage | Count |
 |---|---|
@@ -390,7 +370,9 @@ The retrieval pipeline processed these queries and assembled the following artic
 | After relevance pre-filtering | 226 |
 | Articles processed by LLM | 226 |
 
-All 226 articles were processed by the multi-pass extraction system. The overall extraction results are summarized below and visualized in Figure 3.
+*Table 4: Article processing statistics for the beta-carotene case study.*
+
+All 226 articles were processed by the multi-pass extraction system. The overall extraction results are summarized in Table 5 and visualized in Figure 3.
 
 ![Extraction Results](figures/fig2_results_summary.png)
 
@@ -408,17 +390,21 @@ All 226 articles were processed by the multi-pass extraction system. The overall
 | Productive articles (with triples) | 103 (45.6%) |
 | Average triples per productive article | 45.0 |
 
+*Table 5: Summary of extraction results for the beta-carotene case study.*
+
 The 73.5% canonical ontology coverage indicates that the 13-relation vocabulary captures the majority of biological relationships in the carotenoid biosynthesis literature. The remaining 26.5% of triples use 512 distinct non-canonical relation strings -- many of which are domain-specific phrases such as "flux-directed toward," "competes for substrate with," and "is a precursor to" that are scientifically meaningful but not covered by the current vocabulary. This suggests that ontology expansion with 3-5 additional relation types could increase canonical coverage above 85%.
 
 The structured metric triples (has_metric, 598 triples, 12.7%) represent a unique capability relative to BTP1: every reported yield, titer, fold-improvement, or percentage change is stored as a structured data point rather than embedded in entity names. These metric triples can be retrieved and sorted to produce a ranked list of performance benchmarks across all 226 papers.
 
 ### 6.2 Knowledge Graph Structure and Relation Analysis
 
+The distribution of relation types across all 4,722 extracted triples, together with article productivity statistics, is shown in Figure 4.
+
 ![Graph Structure](figures/fig3_graph_structure.png)
 
 *Figure 4: Left: distribution of the 13 canonical relation types across 4,722 extracted triples. Right: article productivity -- 103 productive articles generated all 4,722 triples; 123 articles contained no domain-relevant relationships.*
 
-The four most frequent canonical relations reflect the dominant research themes in carotenoid biosynthesis literature:
+The eight most frequent canonical relations are presented in Table 6, reflecting the dominant research themes in carotenoid biosynthesis literature.
 
 | Relation | Count | Percentage | Interpretation |
 |---|---|---|---|
@@ -431,11 +417,15 @@ The four most frequent canonical relations reflect the dominant research themes 
 | encodes | 378 | 8.0% | Gene-protein relationships |
 | inhibits | 294 | 6.2% | Negative regulatory events |
 
+*Table 6: Distribution of the eight most frequent canonical relation types across 4,722 extracted triples.*
+
 The high proportion of has_metric triples (12.7%) confirms that the explicit metric separation rule in the extraction prompt is working effectively. In a knowledge graph designed for experimental planning, these metric triples are particularly actionable: a researcher can query all has_metric triples and immediately identify the highest-yield production strategies reported in the literature.
 
 The 103 productive articles (45.6% of processed abstracts) generating all 4,722 triples, with an average of 45.0 triples per productive article, reflects the heterogeneity of search results. The 228 PMIDs retrieved by the three queries included papers in the carotenoid field broadly but with varying specificity to beta-carotene production. Abstract-level processing is inherently limited by the information density of the abstract text itself.
 
 ### 6.3 Stability Score Analysis
+
+The Jaccard stability score distribution across all 226 processed articles is shown in Figure 5.
 
 ![Stability Distribution](figures/fig5_stability_histogram.png)
 
@@ -451,25 +441,31 @@ This bimodal distribution suggests the stability score functions primarily as a 
 
 ### 6.4 Multi-Pass Ablation Study
 
-To quantify the recall improvement from multi-pass extraction, a controlled ablation experiment was conducted on 15 productive articles using the llama-3.3-70b-versatile model via Groq. Each article was processed under two conditions: (1) single-pass extraction using the same prompt as Pass 1 of the multi-pass protocol, and (2) full three-pass extraction. The validation pass was applied identically in both conditions.
+To quantify the recall improvement from multi-pass extraction, a controlled ablation experiment was conducted on 15 productive articles using the llama-3.3-70b-versatile model via Groq. Each article was processed under two conditions: (1) single-pass extraction using the same prompt as Pass 1 of the multi-pass protocol, and (2) full three-pass extraction. The validation pass was applied identically in both conditions. The per-article results and pass-level contributions are shown in Figure 6.
 
 ![Ablation Results](figures/fig10_ablation_results.png)
 
 *Figure 6: Left: per-article comparison of single-pass vs. multi-pass triple counts for the 15 ablation articles. Multi-pass consistently outperforms single-pass across all articles. Right: percentage contribution of each extraction pass.*
 
+The aggregate ablation results are presented in Table 7.
+
 | Extraction Mode | Total Triples | Average per Article |
 |---|---|---|
 | Single-pass | 316 | 21.1 |
 | Multi-pass (3 passes) | 855 | 57.0 |
-| **Improvement** | **+539 triples (+170.6%)** | **+35.9 triples (2.7x)** |
+| Improvement | +539 triples (+170.6%) | +35.9 triples (2.7x) |
 
-Per-pass contributions to the multi-pass total:
+*Table 7: Ablation study results comparing single-pass and multi-pass extraction across 15 articles.*
+
+Per-pass contributions to the multi-pass total are broken down in Table 8.
 
 | Pass | Triples | Percentage of Total |
 |---|---|---|
 | Pass 1 (Exhaustive) | 391 | 45.7% |
 | Pass 2 (Overlooked Scan) | 302 | 35.3% |
 | Pass 3 (Gap-Filling) | 162 | 18.9% |
+
+*Table 8: Per-pass contribution to total multi-pass triple yield.*
 
 Pass 1 contributes the largest single share (45.7%), confirming that it identifies the most prominent relationships. Critically, Pass 2 contributes 35.3% of total triples -- more than three-quarters of Pass 1's yield. This substantial contribution from the overlooked scan demonstrates that standard single-pass extraction systematically misses secondary and engineering-detail relationships that are explicitly mentioned in the abstract but receive less textual emphasis than the primary finding.
 
@@ -479,7 +475,7 @@ The total multi-pass yield of 855 triples from 15 articles represents 2.7x the s
 
 ### 6.5 System Output and Query Answering Examples
 
-**Extracted Triple Examples.** For a single abstract (PMID: 20559754, "Strain-dependent carotenoid productions in metabolically engineered Escherichia coli"), the multi-pass extraction produced the following typed triples:
+Extracted Triple Examples. For a single abstract (PMID: 20559754, "Strain-dependent carotenoid productions in metabolically engineered Escherichia coli"), the multi-pass extraction produced the typed triples shown in Table 9.
 
 | Subject | Relation | Object |
 |---|---|---|
@@ -489,9 +485,9 @@ The total multi-pass yield of 855 triples from 15 articles represents 2.7x the s
 | crtEBIY operon | integrated_in | E. coli BW-CARO |
 | astaxanthin pathway | activates | carotenoid diversification |
 
-Each triple carries the source PMID and paper title, enabling full citation traceability from graph edge to primary literature.
+*Table 9: Typed triples extracted from a representative abstract (PMID: 20559754). Each triple carries the source PMID and paper title, enabling full citation traceability from graph edge to primary literature.*
 
-**Structured Metric Data.** The has_metric relation captures performance benchmarks across the full literature:
+Structured Metric Data. The has_metric relation captures performance benchmarks across the full literature. Selected metric triples are listed in Table 10.
 
 | Entity | Metric Value | Source PMID |
 |---|---|---|
@@ -502,7 +498,9 @@ Each triple carries the source PMID and paper title, enabling full citation trac
 | lutein content | 10 g/kg dry weight | 20811803 |
 | hydroxylase overexpression | 11.3-fold increase | 31193511 |
 
-**Semantic Search Results.** When queried with "How can we increase beta-carotene production?", the semantic search retrieved the 50 most relevant triples. The top 10 by cosine similarity score:
+*Table 10: Selected has_metric triples capturing quantitative production benchmarks from the knowledge graph.*
+
+Semantic Search Results. When queried with "How can we increase beta-carotene production?", the semantic search retrieved the 50 most relevant triples. The top 10 by cosine similarity score are presented in Table 11.
 
 | Rank | Score | Subject | Relation | Object | PMID |
 |---|---|---|---|---|---|
@@ -517,6 +515,8 @@ Each triple carries the source PMID and paper title, enabling full citation trac
 | 9 | 0.771 | carbon sources | affect | beta-carotene production | 38607448 |
 | 10 | 0.761 | optimized medium | increases | beta-carotene production | 31193511 |
 
+*Table 11: Top-10 triples retrieved by semantic search for the query "How can we increase beta-carotene production?" ranked by cosine similarity score.*
+
 The 50 retrieved results span 23 unique source papers with 13 distinct relation types, providing comprehensive multi-paper evidence for answer synthesis.
 
 **Full Generated Answer.** From the 50 retrieved triples, KGMiner's anti-hallucination protocol produced the following structured answer:
@@ -527,7 +527,7 @@ The 50 retrieved results span 23 unique source papers with 13 distinct relation 
 
 **Host-Specific Strategies:** Yarrowia lipolytica and Mucor wosnessenskii are highlighted as high-yield hosts (142 mg/L highest reported, PMID: 34983533). Halophiles and E. coli also contribute to production platform diversity.
 
-**Key Quantitative Findings:**
+Key Quantitative Findings (Table 12):
 
 | Finding | Impact |
 |---|---|
@@ -536,51 +536,55 @@ The 50 retrieved results span 23 unique source papers with 13 distinct relation 
 | 78.9% reduction in H2O2 | Improved cell viability |
 | 142 mg/L highest reported yield | Proof-of-concept for commercial scale |
 
-Every metric in this answer is traceable to a specific PMID. The LLM's background knowledge about carotenoid biosynthesis is not incorporated: if a relationship was not extracted from the 226 processed papers, it does not appear in the answer.
+*Table 12: Key quantitative findings from the KGMiner generated answer, all traceable to specific extracted triples and source PMIDs.*
+
+Every metric in this answer is traceable to a specific PMID. The LLM's background knowledge about carotenoid biosynthesis is not incorporated: if a relationship was not extracted from the 226 processed papers, it does not appear in the answer. A summary of KGMiner's query answering capabilities is provided in Figure 7.
 
 ![Query Capabilities](figures/fig6_query_capabilities.png)
 
 *Figure 7: KGMiner query answering capabilities showing typed relation extraction, structured metric capture, PMID citation tracing, and anti-hallucination protocol features.*
 
-### 6.6 Comparison: BTP1 (NEKO Implementation) vs. BTP2 (KGMiner)
+### 6.6 Comparison: NEKO Implementation vs. KGMiner
 
-The following table provides a direct comparison between the BTP1 NEKO implementation and the KGMiner system developed in BTP2, across all pipeline stages.
+Table 13 provides a direct feature-by-feature comparison between the prior NEKO-based implementation and KGMiner across all pipeline stages.
 
-| Feature / Component | BTP1: NEKO Implementation | BTP2: KGMiner |
+| Feature / Component | NEKO Implementation | KGMiner |
 |---|---|---|
-| **Input** | Manual PubMed keyword queries | Natural language research goal (auto-decomposed) |
-| **Query Generation** | Manual (user-specified) | Automated (LLM decomposes goal to 3 queries) |
-| **Data Sources** | PubMed + arXiv + PDFs | PubMed only (Entrez API with batching and retry) |
-| **Abstracts Processed** | 1,088 (Rhodococcus case) | 226 (beta-carotene case, filtered from 228) |
-| **Relation Types** | Untyped (any predicate string) | 13-relation controlled vocabulary |
-| **Extraction Passes** | Single pass | 3 extraction passes + 1 validation pass |
-| **Triples (ablation, 15 articles)** | ~316 (estimated single-pass) | 855 (confirmed multi-pass) |
-| **Recall Improvement** | Baseline | +170.6% |
-| **Entity Deduplication Threshold** | Cosine similarity > 0.80 | Cosine similarity > 0.85 |
-| **Canonical Entity Selection** | First-seen | Longest (most descriptive) name |
-| **Transitive Chain Resolution** | No | Yes (A→B→C resolved to A→C, B→C) |
-| **Relation Normalization** | No | Yes (41 synonyms → 13 canonical types) |
-| **Metric Data Handling** | Embedded in entity names | Structured has_metric triples (598 extracted) |
-| **Graph Structure** | Undirected (BTP1 description) | Directed multigraph with typed edges |
-| **Query Interface** | Keyword-based graph traversal | Semantic search over triple embeddings |
-| **Query Hallucination Risk** | Moderate (ungrounded synthesis) | Low (anti-hallucination protocol, PMID tracing) |
-| **Answer Format** | Text summary | Structured report with quantitative metrics + citations |
-| **LLM Infrastructure** | Single provider | Multi-provider (Groq + Cerebras, 13 models, failover) |
-| **Deployment** | Local Python scripts | FastAPI web application |
-| **Stability Metric** | None | Jaccard stability score per article |
-| **Entities Extracted** | 180+ nodes (Rhodococcus) | 2,996 normalized entities (beta-carotene) |
+| Input | Manual PubMed keyword queries | Natural language research goal (auto-decomposed) |
+| Query Generation | Manual (user-specified) | Automated (LLM decomposes goal to 3 queries) |
+| Data Sources | PubMed + arXiv + PDFs | PubMed only (Entrez API with batching and retry) |
+| Abstracts Processed | 1,088 (Rhodococcus case) | 226 (beta-carotene case, filtered from 228) |
+| Relation Types | Untyped (any predicate string) | 13-relation controlled vocabulary |
+| Extraction Passes | Single pass | 3 extraction passes + 1 validation pass |
+| Triples (ablation, 15 articles) | ~316 (estimated single-pass) | 855 (confirmed multi-pass) |
+| Recall Improvement | Baseline | +170.6% |
+| Entity Deduplication Threshold | Cosine similarity > 0.80 | Cosine similarity > 0.85 |
+| Canonical Entity Selection | First-seen | Longest (most descriptive) name |
+| Transitive Chain Resolution | No | Yes (A→B→C resolved to A→C, B→C) |
+| Relation Normalization | No | Yes (41 synonyms → 13 canonical types) |
+| Metric Data Handling | Embedded in entity names | Structured has_metric triples (598 extracted) |
+| Graph Structure | Undirected | Directed multigraph with typed edges |
+| Query Interface | Keyword-based graph traversal | Semantic search over triple embeddings |
+| Query Hallucination Risk | Moderate (ungrounded synthesis) | Low (anti-hallucination protocol, PMID tracing) |
+| Answer Format | Text summary | Structured report with quantitative metrics + citations |
+| LLM Infrastructure | Single provider | Multi-provider (Groq + Cerebras, 13 models, failover) |
+| Deployment | Local Python scripts | FastAPI web application |
+| Stability Metric | None | Jaccard stability score per article |
+| Entities Extracted | 180+ nodes (Rhodococcus) | 2,996 normalized entities (beta-carotene) |
 
-The BTP1 system demonstrated that LLM-based knowledge graph construction from PubMed is feasible. BTP2 addresses every structural limitation identified in BTP1: relationship types are now explicitly captured; multi-pass extraction recovers the majority of relationships that single-pass misses; semantic queries enable natural language access; and evidence-grounding prevents hallucination in answer synthesis.
+*Table 13: Feature-by-feature comparison of the prior NEKO-based pipeline and KGMiner across all pipeline stages.*
 
-### 6.7 Query Output Comparison: BTP1 (NEKO-style) vs. KGMiner
+The prior NEKO-based system demonstrated that LLM-based knowledge graph construction from PubMed is feasible. KGMiner addresses every structural limitation identified in that earlier work: relationship types are now explicitly captured; multi-pass extraction recovers the majority of relationships that single-pass misses; semantic queries enable natural language access; and evidence-grounding prevents hallucination in answer synthesis.
 
-To concretely demonstrate the output quality difference, we present actual system responses to a natural language query on the beta-carotene domain. The BTP1/NEKO-style output reflects the keyword-based graph traversal and unstructured synthesis that the BTP1 system used; the KGMiner output is the verbatim, exact response produced by the system during this study.
+### 6.7 Query Output Comparison: NEKO-style vs. KGMiner
 
-**Query:** *"How we can increase beta carotene production"*
+To concretely demonstrate the output quality difference, actual system responses to a natural language query on the beta-carotene domain are presented below. The NEKO-style output reflects keyword-based graph traversal and unstructured synthesis; the KGMiner output is the verbatim response produced by the system during this study. A side-by-side summary of output quality criteria is provided in Table 14.
 
-#### BTP1 / NEKO-Style Output (Keyword-Based, Untyped, No Citations)
+Query: "How we can increase beta carotene production"
 
-In the BTP1 system, the user submits a keyword ("beta-carotene") and the system returns connected entity names from the graph without relation types. The LLM then synthesizes a general text summary. A representative output would be:
+#### NEKO-Style Output (Keyword-Based, Untyped, No Citations)
+
+In the prior NEKO-based system, the user submits a keyword ("beta-carotene") and the system returns connected entity names from the graph without relation types. The LLM then synthesizes a general text summary. A representative output would be:
 
 > **Entities Connected to "beta-carotene" in Graph:**
 > *Yarrowia lipolytica, Escherichia coli, metabolic engineering, carotenoid pathway, crtYB gene, lycopene, IPP, MVA pathway, culture conditions, carbon source, glucose, nitrogen source, fermentation, bioreactor, Saccharomyces cerevisiae.*
@@ -588,7 +592,7 @@ In the BTP1 system, the user submits a keyword ("beta-carotene") and the system 
 > **Summary:**
 > Beta-carotene production involves carotenoid pathway engineering in organisms such as Yarrowia lipolytica and Escherichia coli. Metabolic engineering strategies including pathway overexpression and carbon source optimization have been reported. The crtYB gene is associated with carotenoid biosynthesis. Culture conditions including glucose and nitrogen sources affect production levels. Further studies are needed to optimize these parameters for industrial-scale applications.
 
-**Limitations:** No relation types; no citations; no specific yield values; requires exact keyword; no mechanism details.
+Limitations of this output: no relation types; no citations; no specific yield values; requires exact keyword; no mechanism details.
 
 ---
 
@@ -674,7 +678,7 @@ Note: The above answer was generated entirely from 50 semantically retrieved tri
 
 #### Side-by-Side Output Quality Comparison
 
-| Criterion | BTP1 / NEKO-Style | KGMiner (Actual) |
+| Criterion | NEKO-Style | KGMiner (Actual) |
 |---|---|---|
 | Query type | Keyword only | Full natural language sentence |
 | Relation types | None — entity list only | 13 typed (activates, produces, has_metric...) |
@@ -686,17 +690,17 @@ Note: The above answer was generated entirely from 50 semantically retrieved tri
 | Output structure | Paragraph summary | Structured report with tables, sections, metrics |
 | Actionability | Low | High — specific genes, strains, titers, conditions |
 
+*Table 14: Side-by-side comparison of output quality between NEKO-style and KGMiner responses to the same natural language query.*
+
 ## CHAPTER 7: CONCLUSION
 
-This report presents KGMiner, an enhanced AI-driven workflow for constructing typed, directed knowledge graphs from biomedical literature. Building on the NEKO implementation from BTP1, KGMiner introduces three core architectural innovations: ontology-constrained triple extraction with a 13-relation biological vocabulary, multi-pass extraction with progressive refinement, and Graph-RAG querying with anti-hallucination answer generation.
+This report presents KGMiner, an enhanced AI-driven workflow for constructing typed, directed knowledge graphs from biomedical literature. Building on the foundation established by the NEKO pipeline (Xiao et al., 2025), KGMiner introduces three core architectural innovations: ontology-constrained triple extraction with a 13-relation biological vocabulary, multi-pass extraction with progressive refinement, and Graph-RAG querying with anti-hallucination answer generation.
 
-The system was evaluated on a beta-carotene biosynthesis case study, processing 226 PubMed abstracts and extracting 4,722 typed triples across 2,996 normalized biological entities. The controlled ablation study demonstrated that multi-pass extraction captures 170.6% more triples than single-pass processing (855 vs. 316 triples on 15 articles), with each of the three passes contributing meaningfully (45.7%, 35.3%, 18.9% respectively). The 13-relation ontological vocabulary covers 73.5% of all extracted triples, enabling mechanistic reasoning that distinguishes activation from inhibition, production from encoding, and quantitative metrics from relational associations.
+The system was evaluated on a beta-carotene biosynthesis case study, processing 226 PubMed abstracts and extracting 4,722 typed triples across 2,996 normalized biological entities. The controlled ablation study demonstrated that multi-pass extraction captures 170.6% more triples than single-pass processing (855 vs. 316 triples on 15 articles), with the three passes contributing 45.7%, 35.3%, and 18.9% respectively. The 13-relation ontological vocabulary covers 73.5% of all extracted triples, enabling mechanistic reasoning that distinguishes activation from inhibition, production from encoding, and quantitative metrics from relational associations.
 
-The semantic Graph-RAG querying system enables natural language queries against the knowledge graph, returning structured, citation-backed answers with specific quantitative metrics (11.3-fold increase, 107.22 mg/L yield, 142 mg/L maximum yield) traceable to source PubMed IDs. This transforms the knowledge graph from a navigable visualization into an active research tool that can synthesize cross-paper insights in response to plain-language questions.
+The semantic Graph-RAG querying system enables natural language queries against the knowledge graph, returning structured, citation-backed answers with specific quantitative metrics such as an 11.3-fold increase in yield via hydroxylase overexpression, a 107.22 mg/L beta-carotene titer from glucose-based culture, and a maximum reported yield of 142 mg/L from Yarrowia lipolytica — all traceable to source PubMed IDs. This transforms the knowledge graph from a navigable visualization into an active research tool capable of synthesizing cross-paper insights in response to plain-language questions.
 
-KGMiner directly addresses each limitation identified in BTP1's Future Work section: full-sentence query processing is implemented via semantic triple embedding; efficiency is maintained through multi-provider LLM fallback and free-tier APIs; the hypothesis generation capability is embedded in the structured answer synthesis with quantitative benchmarks.
-
-The system is deployed as a FastAPI web application using free-tier cloud LLM providers (Groq and Cerebras with 13 available models), making it accessible for biological research without dedicated computational infrastructure. The codebase is publicly available at https://github.com/Up14/Knowledge.
+The system addresses each of the four structural gaps identified in the prior NEKO implementation: full-sentence query processing via semantic triple embedding, improved recall through multi-pass extraction, structured metric capture via dedicated has_metric triples, and evidence-grounding that prevents hallucination in answer synthesis. The system is deployed as a FastAPI web application using free-tier cloud LLM providers (Groq and Cerebras with 13 available models), making it accessible for biological research without dedicated computational infrastructure. The codebase is publicly available at https://github.com/Up14/Knowledge.
 
 ## CHAPTER 8: FUTURE WORK
 
